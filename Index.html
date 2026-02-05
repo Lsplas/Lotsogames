@@ -2,35 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Super Obby</title>
+    <title>Ultimate Obby v4.0</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #ui {
-            position: absolute; top: 20px; left: 20px; color: white;
-            background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px;
-            pointer-events: none; border: 2px solid #555;
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
         }
-        #win-screen {
-            display: none; position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); color: gold; text-align: center;
-            background: rgba(0,0,0,0.9); padding: 50px; border-radius: 20px;
+        .hud-item {
+            color: white; text-shadow: 2px 2px 0 #000; font-weight: bold; font-size: 24px; margin-bottom: 10px;
         }
-        .stat { font-size: 1.2rem; margin-bottom: 5px; }
-        .coil-active { color: #00ff00; font-weight: bold; }
+        #center-crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: white; border-radius: 50%; transform: translate(-50%, -50%);
+            border: 2px solid black; opacity: 0.8;
+        }
+        #title-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; pointer-events: auto; z-index: 999;
+        }
+        h1 { font-size: 60px; margin: 0; color: #00d26a; text-shadow: 0 0 20px #00d26a; }
+        p { font-size: 20px; color: #ccc; margin-bottom: 30px; }
+        button {
+            padding: 15px 50px; font-size: 24px; background: white; border: none;
+            color: #333; cursor: pointer; border-radius: 50px; font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover { transform: scale(1.1); box-shadow: 0 0 20px white; }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div class="stat">Level: <span id="level-display">1</span> / 3</div>
-        <div class="stat">Time: <span id="timer">0.0</span>s</div>
-        <div id="coil-status">Speed Coil: <span style="color:red">OFF</span></div>
-    </div>
 
-    <div id="win-screen">
-        <h1>YOU ESCAPED!</h1>
-        <p id="final-time" style="font-size: 1.5rem;"></p>
-        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Play Again</button>
+    <div id="ui-layer">
+        <div class="hud-item">LEVEL: <span id="level-txt" style="color:#00d26a">1</span></div>
+        <div class="hud-item">DEATHS: <span id="death-txt" style="color:#ff4444">0</span></div>
+    </div>
+    <div id="center-crosshair"></div>
+
+    <div id="title-screen">
+        <h1>MASTER OBBY</h1>
+        <p>WASD to Move • SPACE to Jump • CLICK to Start</p>
+        <button id="start-btn">PLAY NOW</button>
     </div>
 
     <script type="importmap">
@@ -46,156 +59,334 @@
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-        // --- 1. ENGINE SETUP ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111122); // Dark night sky
-        scene.fog = new THREE.FogExp2(0x111122, 0.02);
+        // --- 1. AUDIO ENGINE (Synthesized Sounds) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            if (type === 'jump') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'die') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'check') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+                
+                setTimeout(() => {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.frequency.setValueAtTime(900, audioCtx.currentTime);
+                    gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc2.start(); osc2.stop(audioCtx.currentTime + 0.2);
+                }, 100);
+            }
+        }
+
+        // --- 2. PARTICLE SYSTEM ---
+        const particles = [];
+        function createExplosion(x, y, z, color) {
+            for(let i=0; i<20; i++) {
+                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const mat = new THREE.MeshBasicMaterial({ color: color });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, y, z);
+                
+                // Random velocity
+                const vel = new THREE.Vector3(
+                    (Math.random()-0.5)*10, 
+                    (Math.random())*10, 
+                    (Math.random()-0.5)*10
+                );
+                
+                scene.add(mesh);
+                particles.push({ mesh, vel, life: 1.0 });
+            }
+        }
+
+        // --- 3. SCENE & TEXTURES ---
+        function createGridTexture(c1, c2) {
+            const cvs = document.createElement('canvas'); cvs.width = 64; cvs.height = 64;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = c1; ctx.fillRect(0,0,64,64);
+            ctx.fillStyle = c2; ctx.fillRect(0,0,32,32); ctx.fillRect(32,32,32,32);
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            tex.magFilter = THREE.NearestFilter;
+            return tex;
+        }
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        const light = new THREE.PointLight(0xffffff, 100, 100);
-        light.position.set(0, 10, 0);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040, 2));
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Soft white light
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2); // Sun
+        dirLight.position.set(20, 50, 30);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
 
-        // --- 2. PLAYER & STATS ---
-        const player = new THREE.Mesh(
-            new THREE.CapsuleGeometry(0.4, 0.8, 4, 8),
-            new THREE.MeshStandardMaterial({ color: 0x00ff88 })
-        );
-        player.position.set(0, 5, 0);
-        scene.add(player);
+        // --- 4. PLAYER ---
+        const playerGroup = new THREE.Group();
+        scene.add(playerGroup);
 
-        let velocity = new THREE.Vector3();
-        let canJump = false;
-        let hasSpeedCoil = false;
-        let currentLevel = 1;
-        let startTime = Date.now();
-        let gameActive = true;
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+        const torsoMat = new THREE.MeshStandardMaterial({ color: 0x0088ff });
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
 
-        const controls = new PointerLockControls(camera, document.body);
-        document.addEventListener('click', () => controls.lock());
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), skinMat); head.position.y = 1.75;
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), torsoMat); torso.position.y = 1.1;
+        const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), legMat); lLeg.position.set(-0.2, 0.4, 0);
+        const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), legMat); rLeg.position.set(0.2, 0.4, 0);
+        const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.8, 0.25), skinMat); lArm.position.set(-0.55, 1.1, 0);
+        const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.8, 0.25), skinMat); rArm.position.set(0.55, 1.1, 0);
 
-        // --- 3. WORLD GENERATION ---
+        [head, torso, lLeg, rLeg, lArm, rArm].forEach(m => { m.castShadow = true; playerGroup.add(m); });
+
+        // --- 5. WORLD ---
         const platforms = [];
-        const createBox = (w, h, d, x, y, z, color, type = 'platform') => {
-            const mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(w, h, d),
-                new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
-            );
+        const movingObjects = [];
+        const texSpawn = createGridTexture('#888', '#999');
+        const texLava = createGridTexture('#ff0000', '#aa0000');
+        const texCheck = createGridTexture('#ffff00', '#ddaa00');
+
+        function createPart(w, h, d, x, y, z, type, moveData = null) {
+            let mat = new THREE.MeshStandardMaterial({ map: texSpawn });
+            if(type === 'lava') mat = new THREE.MeshStandardMaterial({ map: texLava, emissive: 0x550000 });
+            if(type === 'check') mat = new THREE.MeshStandardMaterial({ map: texCheck });
+
+            mat.map.repeat.set(w/2, d/2);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
             mesh.position.set(x, y, z);
-            mesh.userData = { type };
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            mesh.userData = { type, move: moveData };
             scene.add(mesh);
             platforms.push(mesh);
+            if(moveData) movingObjects.push(mesh);
+        }
+
+        // LEVEL 1
+        createPart(10, 1, 10, 0, 0, 0, 'spawn');
+        createPart(3, 1, 3, 0, 1, 10, 'base');
+        createPart(3, 1, 3, 0, 2, 17, 'base');
+        createPart(3, 1, 3, 0, 3, 24, 'base');
+        createPart(8, 1, 8, 0, 4, 32, 'check'); // Checkpoint 1
+
+        // LEVEL 2 (Moving)
+        createPart(4, 0.5, 4, 0, 4, 42, 'base', { type: 'slide', axis: 'x', range: 5, speed: 2 });
+        createPart(4, 0.5, 4, 0, 5, 52, 'base', { type: 'slide', axis: 'x', range: 5, speed: -2 });
+        createPart(8, 1, 8, 0, 6, 62, 'check'); // Checkpoint 2
+
+        // LEVEL 3 (Spinning Beams)
+        createPart(2, 1, 25, 0, 6, 80, 'base');
+        createPart(10, 1, 1, 0, 7.5, 80, 'lava', { type: 'spin', speed: 2 }); // Spinner
+        createPart(10, 1, 1, 0, 7.5, 90, 'lava', { type: 'spin', speed: -3 }); // Spinner
+        
+        createPart(15, 1, 15, 0, 6, 110, 'check'); // WIN
+
+        // Floor Lava
+        createPart(300, 1, 300, 0, -10, 50, 'lava');
+
+        // --- 6. GAME LOGIC ---
+        let velocity = new THREE.Vector3();
+        let spawnPos = new THREE.Vector3(0, 5, 0);
+        let deaths = 0;
+        let canJump = false;
+        
+        const controls = new PointerLockControls(camera, document.body);
+        document.getElementById('start-btn').onclick = () => {
+            controls.lock(); 
+            document.getElementById('title-screen').style.display = 'none';
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         };
 
-        // LAVA FLOOR (Global Killzone)
-        createBox(200, 1, 200, 0, -10, 50, 0xff2200, 'lava');
+        const keys = { w:0, a:0, s:0, d:0 };
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'KeyW') keys.w = 1;
+            if(e.code === 'KeyS') keys.s = 1;
+            if(e.code === 'KeyA') keys.a = 1;
+            if(e.code === 'KeyD') keys.d = 1;
+            if(e.code === 'Space' && canJump) { 
+                velocity.y = 16; 
+                canJump = false; 
+                playSound('jump');
+            }
+            if(e.code === 'KeyR') die();
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.code === 'KeyW') keys.w = 0;
+            if(e.code === 'KeyS') keys.s = 0;
+            if(e.code === 'KeyA') keys.a = 0;
+            if(e.code === 'KeyD') keys.d = 0;
+        });
 
-        // LEVEL 1: Basic Jumps
-        createBox(10, 1, 10, 0, 0, 0, 0x444444); // Spawn
-        createBox(3, 0.5, 3, 0, 2, 10, 0x0088ff);
-        createBox(3, 0.5, 3, 5, 4, 15, 0x0088ff);
-        createBox(3, 0.5, 3, 0, 6, 20, 0x0088ff);
-        
-        // LEVEL 2: The Speed Coil Level
-        createBox(10, 1, 10, 0, 8, 30, 0x444444); // Checkpoint 1
-        // SPEED COIL PICKUP (Yellow Box)
-        createBox(1, 1, 1, 0, 9.5, 30, 0xffff00, 'coil'); 
-        
-        createBox(2, 0.5, 15, 10, 8, 45, 0xaa00ff); // Long jump for speed coil
-        createBox(2, 0.5, 15, -10, 10, 60, 0xaa00ff);
+        function die() {
+            playSound('die');
+            createExplosion(playerGroup.position.x, playerGroup.position.y, playerGroup.position.z, 0xffff00);
+            playerGroup.visible = false;
+            setTimeout(() => {
+                playerGroup.position.copy(spawnPos);
+                velocity.set(0,0,0);
+                playerGroup.visible = true;
+                deaths++;
+                document.getElementById('death-txt').innerText = deaths;
+            }, 1000);
+        }
 
-        // LEVEL 3: Lava Pillars
-        createBox(10, 1, 10, 0, 12, 80, 0x444444); // Checkpoint 2
-        createBox(2, 8, 2, 5, 10, 90, 0xff2200, 'lava'); // Lava Pillar
-        createBox(4, 0.5, 4, 0, 14, 95, 0x00ff88);
-        createBox(2, 12, 2, -5, 10, 105, 0xff2200, 'lava'); // Lava Pillar
-        createBox(15, 1, 15, 0, 16, 120, 0xffd700, 'goal'); // WIN PAD
-
-        // --- 4. GAME LOOP ---
         const clock = new THREE.Clock();
 
-        function update() {
-            if (!gameActive) return;
-            const delta = clock.getDelta();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+            const time = Date.now() * 0.001;
 
-            // Timer UI
-            document.getElementById('timer').innerText = ((Date.now() - startTime)/1000).toFixed(1);
+            // Update Moving Objects
+            movingObjects.forEach(obj => {
+                const m = obj.userData.move;
+                if(m.type === 'slide') {
+                    if(m.axis === 'x') obj.position.x = Math.sin(time * m.speed) * m.range;
+                } else if (m.type === 'spin') {
+                    obj.rotation.y += m.speed * delta;
+                }
+            });
 
-            if (controls.isLocked) {
-                velocity.y -= 35 * delta; // Gravity
+            // Update Particles
+            for(let i = particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.mesh.position.add(p.vel.clone().multiplyScalar(delta));
+                p.vel.y -= 20 * delta; // Gravity
+                p.life -= delta;
+                p.mesh.scale.setScalar(p.life);
+                if(p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
 
-                // Movement calculation
-                const moveSpeed = hasSpeedCoil ? 80 : 40;
-                let xDir = 0, zDir = 0;
+            if (controls.isLocked && playerGroup.visible) {
+                // Physics
+                velocity.y -= 40 * delta; // Gravity
                 
-                // Keyboard inputs (simple version for brevity)
-                const key = (k) => input[k] ? 1 : 0;
-                const input = {}; 
-                window.onkeydown = (e) => input[e.code] = true;
-                window.onkeyup = (e) => input[e.code] = false;
+                // Movement
+                const speed = 200 * delta;
+                const dir = new THREE.Vector3();
+                const camDir = new THREE.Vector3();
+                camera.getWorldDirection(camDir);
+                camDir.y = 0; camDir.normalize();
+                
+                const camSide = new THREE.Vector3().crossVectors(camera.up, camDir).normalize();
+                
+                if (keys.w) dir.add(camDir);
+                if (keys.s) dir.sub(camDir);
+                if (keys.a) dir.add(camSide);
+                if (keys.d) dir.sub(camSide);
+                
+                if (dir.lengthSq() > 0) dir.normalize();
+                
+                velocity.x -= velocity.x * 10 * delta; // Friction
+                velocity.z -= velocity.z * 10 * delta;
+                
+                velocity.x += dir.x * speed;
+                velocity.z += dir.z * speed;
 
-                if (input['KeyW']) velocity.z -= moveSpeed * delta;
-                if (input['KeyS']) velocity.z += moveSpeed * delta;
-                if (input['KeyA']) velocity.x -= moveSpeed * delta;
-                if (input['KeyD']) velocity.x += moveSpeed * delta;
-                if (input['Space'] && canJump) { velocity.y = 15; canJump = false; }
+                playerGroup.position.x += velocity.x * delta;
+                playerGroup.position.z += velocity.z * delta;
+                playerGroup.position.y += velocity.y * delta;
 
-                velocity.x *= 0.9; velocity.z *= 0.9; // Friction
+                // Collision
+                const playerBox = new THREE.Box3().setFromObject(torso);
+                let onGround = false;
 
-                player.position.x += velocity.x * delta;
-                player.position.z += velocity.z * delta;
-                player.position.y += velocity.y * delta;
-
-                // Collisions
                 platforms.forEach(p => {
-                    const b = new THREE.Box3().setFromObject(p);
-                    if (b.containsPoint(player.position)) {
+                    const pBox = new THREE.Box3().setFromObject(p);
+                    if (playerBox.intersectsBox(pBox)) {
+                        // Check if hitting lava
                         if (p.userData.type === 'lava') {
-                            player.position.set(0, 20, 0); // Respawn
-                            velocity.set(0,0,0);
-                        } else if (p.userData.type === 'coil') {
-                            hasSpeedCoil = true;
-                            p.visible = false; // "Collect" it
-                            document.getElementById('coil-status').innerHTML = 'Speed Coil: <span class="coil-active">ACTIVE</span>';
-                        } else if (p.userData.type === 'goal') {
-                            gameActive = false;
-                            document.exitPointerLock();
-                            document.getElementById('win-screen').style.display = 'block';
-                            document.getElementById('final-time').innerText = `Time: ${document.getElementById('timer').innerText}s`;
-                        } else {
-                            if (velocity.y < 0 && player.position.y > b.min.y) {
-                                player.position.y = b.max.y + 0.6;
-                                velocity.y = 0;
-                                canJump = true;
-                                // Update Level Display based on Z position
-                                if (player.position.z > 25) document.getElementById('level-display').innerText = "2";
-                                if (player.position.z > 75) document.getElementById('level-display').innerText = "3";
+                             die();
+                        } 
+                        // Land on top
+                        else if (velocity.y < 0 && playerGroup.position.y > pBox.max.y - 0.5) {
+                            playerGroup.position.y = pBox.max.y;
+                            velocity.y = 0;
+                            onGround = true;
+                            canJump = true;
+                            
+                            // Checkpoint Logic
+                            if (p.userData.type === 'check') {
+                                if (p.position.z > spawnPos.z + 1) { // New checkpoint
+                                    spawnPos.copy(p.position).add(new THREE.Vector3(0,5,0));
+                                    playSound('check');
+                                    document.getElementById('level-txt').innerText = Math.floor(p.position.z/30)+1;
+                                }
+                            }
+                            
+                            // Sticky Moving Platforms
+                            if (p.userData.move && p.userData.move.type === 'slide') {
+                                const m = p.userData.move;
+                                const moveDelta = (Math.sin(time * m.speed) - Math.sin((time-delta) * m.speed)) * m.range;
+                                playerGroup.position.x += moveDelta;
                             }
                         }
                     }
                 });
 
-                // Smooth 3rd Person Follow
-                const offset = new THREE.Vector3(0, 4, 8).applyQuaternion(player.quaternion);
-                camera.position.lerp(player.position.clone().add(offset), 0.1);
-                camera.lookAt(player.position);
+                if (playerGroup.position.y < -15) die();
+
+                // Animation
+                if (dir.lengthSq() > 0.1) {
+                    playerGroup.rotation.y = Math.atan2(dir.x, dir.z); // Face movement
+                    lLeg.rotation.x = Math.sin(time * 15) * 0.8;
+                    rLeg.rotation.x = Math.sin(time * 15 + Math.PI) * 0.8;
+                } else {
+                    lLeg.rotation.x = 0; rLeg.rotation.x = 0;
+                }
+
+                // Camera
+                const idealOff = new THREE.Vector3(0, 4, 8);
+                idealOff.applyQuaternion(playerGroup.quaternion);
+                // Simple follow
+                camera.position.lerp(playerGroup.position.clone().add(new THREE.Vector3(0, 4, 8)), 0.1);
+                camera.lookAt(playerGroup.position);
             }
+
             renderer.render(scene, camera);
-            requestAnimationFrame(update);
         }
+        animate();
 
-        update();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+        window.onresize = () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        };
     </script>
 </body>
 </html>
