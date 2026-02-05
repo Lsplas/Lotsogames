@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Super Obby</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui {
+            position: absolute; top: 20px; left: 20px; color: white;
+            background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px;
+            pointer-events: none; border: 2px solid #555;
+        }
+        #win-screen {
+            display: none; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); color: gold; text-align: center;
+            background: rgba(0,0,0,0.9); padding: 50px; border-radius: 20px;
+        }
+        .stat { font-size: 1.2rem; margin-bottom: 5px; }
+        .coil-active { color: #00ff00; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div class="stat">Level: <span id="level-display">1</span> / 3</div>
+        <div class="stat">Time: <span id="timer">0.0</span>s</div>
+        <div id="coil-status">Speed Coil: <span style="color:red">OFF</span></div>
+    </div>
+
+    <div id="win-screen">
+        <h1>YOU ESCAPED!</h1>
+        <p id="final-time" style="font-size: 1.5rem;"></p>
+        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Play Again</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // --- 1. ENGINE SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122); // Dark night sky
+        scene.fog = new THREE.FogExp2(0x111122, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const light = new THREE.PointLight(0xffffff, 100, 100);
+        light.position.set(0, 10, 0);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040, 2));
+
+        // --- 2. PLAYER & STATS ---
+        const player = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.4, 0.8, 4, 8),
+            new THREE.MeshStandardMaterial({ color: 0x00ff88 })
+        );
+        player.position.set(0, 5, 0);
+        scene.add(player);
+
+        let velocity = new THREE.Vector3();
+        let canJump = false;
+        let hasSpeedCoil = false;
+        let currentLevel = 1;
+        let startTime = Date.now();
+        let gameActive = true;
+
+        const controls = new PointerLockControls(camera, document.body);
+        document.addEventListener('click', () => controls.lock());
+
+        // --- 3. WORLD GENERATION ---
+        const platforms = [];
+        const createBox = (w, h, d, x, y, z, color, type = 'platform') => {
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(w, h, d),
+                new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
+            );
+            mesh.position.set(x, y, z);
+            mesh.userData = { type };
+            scene.add(mesh);
+            platforms.push(mesh);
+        };
+
+        // LAVA FLOOR (Global Killzone)
+        createBox(200, 1, 200, 0, -10, 50, 0xff2200, 'lava');
+
+        // LEVEL 1: Basic Jumps
+        createBox(10, 1, 10, 0, 0, 0, 0x444444); // Spawn
+        createBox(3, 0.5, 3, 0, 2, 10, 0x0088ff);
+        createBox(3, 0.5, 3, 5, 4, 15, 0x0088ff);
+        createBox(3, 0.5, 3, 0, 6, 20, 0x0088ff);
+        
+        // LEVEL 2: The Speed Coil Level
+        createBox(10, 1, 10, 0, 8, 30, 0x444444); // Checkpoint 1
+        // SPEED COIL PICKUP (Yellow Box)
+        createBox(1, 1, 1, 0, 9.5, 30, 0xffff00, 'coil'); 
+        
+        createBox(2, 0.5, 15, 10, 8, 45, 0xaa00ff); // Long jump for speed coil
+        createBox(2, 0.5, 15, -10, 10, 60, 0xaa00ff);
+
+        // LEVEL 3: Lava Pillars
+        createBox(10, 1, 10, 0, 12, 80, 0x444444); // Checkpoint 2
+        createBox(2, 8, 2, 5, 10, 90, 0xff2200, 'lava'); // Lava Pillar
+        createBox(4, 0.5, 4, 0, 14, 95, 0x00ff88);
+        createBox(2, 12, 2, -5, 10, 105, 0xff2200, 'lava'); // Lava Pillar
+        createBox(15, 1, 15, 0, 16, 120, 0xffd700, 'goal'); // WIN PAD
+
+        // --- 4. GAME LOOP ---
+        const clock = new THREE.Clock();
+
+        function update() {
+            if (!gameActive) return;
+            const delta = clock.getDelta();
+
+            // Timer UI
+            document.getElementById('timer').innerText = ((Date.now() - startTime)/1000).toFixed(1);
+
+            if (controls.isLocked) {
+                velocity.y -= 35 * delta; // Gravity
+
+                // Movement calculation
+                const moveSpeed = hasSpeedCoil ? 80 : 40;
+                let xDir = 0, zDir = 0;
+                
+                // Keyboard inputs (simple version for brevity)
+                const key = (k) => input[k] ? 1 : 0;
+                const input = {}; 
+                window.onkeydown = (e) => input[e.code] = true;
+                window.onkeyup = (e) => input[e.code] = false;
+
+                if (input['KeyW']) velocity.z -= moveSpeed * delta;
+                if (input['KeyS']) velocity.z += moveSpeed * delta;
+                if (input['KeyA']) velocity.x -= moveSpeed * delta;
+                if (input['KeyD']) velocity.x += moveSpeed * delta;
+                if (input['Space'] && canJump) { velocity.y = 15; canJump = false; }
+
+                velocity.x *= 0.9; velocity.z *= 0.9; // Friction
+
+                player.position.x += velocity.x * delta;
+                player.position.z += velocity.z * delta;
+                player.position.y += velocity.y * delta;
+
+                // Collisions
+                platforms.forEach(p => {
+                    const b = new THREE.Box3().setFromObject(p);
+                    if (b.containsPoint(player.position)) {
+                        if (p.userData.type === 'lava') {
+                            player.position.set(0, 20, 0); // Respawn
+                            velocity.set(0,0,0);
+                        } else if (p.userData.type === 'coil') {
+                            hasSpeedCoil = true;
+                            p.visible = false; // "Collect" it
+                            document.getElementById('coil-status').innerHTML = 'Speed Coil: <span class="coil-active">ACTIVE</span>';
+                        } else if (p.userData.type === 'goal') {
+                            gameActive = false;
+                            document.exitPointerLock();
+                            document.getElementById('win-screen').style.display = 'block';
+                            document.getElementById('final-time').innerText = `Time: ${document.getElementById('timer').innerText}s`;
+                        } else {
+                            if (velocity.y < 0 && player.position.y > b.min.y) {
+                                player.position.y = b.max.y + 0.6;
+                                velocity.y = 0;
+                                canJump = true;
+                                // Update Level Display based on Z position
+                                if (player.position.z > 25) document.getElementById('level-display').innerText = "2";
+                                if (player.position.z > 75) document.getElementById('level-display').innerText = "3";
+                            }
+                        }
+                    }
+                });
+
+                // Smooth 3rd Person Follow
+                const offset = new THREE.Vector3(0, 4, 8).applyQuaternion(player.quaternion);
+                camera.position.lerp(player.position.clone().add(offset), 0.1);
+                camera.lookAt(player.position);
+            }
+            renderer.render(scene, camera);
+            requestAnimationFrame(update);
+        }
+
+        update();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
