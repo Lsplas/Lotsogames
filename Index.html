@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ultimate Obby: Mobile Edition</title>
+    <title>Ultimate Obby v6: Free Look</title>
     <style>
         /* --- UI STYLES --- */
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; user-select: none; -webkit-user-select: none; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; user-select: none; -webkit-user-select: none; touch-action: none; }
         
         #hud {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -15,7 +15,6 @@
         }
         .stats { font-size: 20px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000; }
         
-        /* INVENTORY */
         .inventory-box {
             display: flex; gap: 10px; align-self: center; margin-bottom: 20px; pointer-events: auto;
         }
@@ -44,44 +43,45 @@
         /* --- MOBILE CONTROLS --- */
         #mobile-controls {
             position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px;
-            pointer-events: none; display: none; /* Hidden on PC by default */
+            pointer-events: none; display: none; 
             justify-content: space-between; z-index: 50;
         }
-        .d-pad {
-            position: relative; width: 150px; height: 150px; pointer-events: auto;
-        }
+        .d-pad { position: relative; width: 150px; height: 150px; pointer-events: auto; }
         .btn {
             position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.2);
             border: 2px solid rgba(255,255,255,0.5); border-radius: 10px; backdrop-filter: blur(2px);
             display: flex; justify-content: center; align-items: center; color: white; font-weight: bold;
-            touch-action: none; -webkit-tap-highlight-color: transparent;
         }
         .btn:active { background: rgba(255,255,255,0.5); }
         
-        /* D-PAD Positioning */
         #btn-up { top: 0; left: 50px; }
         #btn-down { bottom: 0; left: 50px; }
         #btn-left { top: 50px; left: 0; }
         #btn-right { top: 50px; right: 0; }
         
-        /* JUMP BUTTON */
         #btn-jump {
             width: 80px; height: 80px; border-radius: 50%; bottom: 20px; right: 20px; position: absolute;
             background: rgba(255,200,0,0.2); border-color: gold; pointer-events: auto;
         }
 
-        /* Show mobile controls on small screens */
+        /* Camera Touch Zone (Right side of screen) */
+        #cam-zone {
+            position: absolute; top: 0; right: 0; width: 50%; height: 100%;
+            z-index: 40; display: none; pointer-events: auto;
+        }
+
         @media (max-width: 1024px) {
             #mobile-controls { display: flex; }
-            .inventory-box { margin-bottom: 180px; } /* Move inventory up so thumb doesn't cover it */
+            #cam-zone { display: block; }
+            .inventory-box { margin-bottom: 180px; } 
         }
     </style>
 </head>
 <body>
 
     <div id="menu-screen">
-        <h1>SKY BOUND v5</h1>
-        <p>Morning Edition • Ghosts & Spinners • Mobile Ready</p>
+        <h1>SKY BOUND v6</h1>
+        <p>New: Move Mouse/Finger to Look Around!</p>
         <button id="play-btn">PLAY GAME</button>
     </div>
 
@@ -97,6 +97,7 @@
         </div>
     </div>
 
+    <div id="cam-zone"></div>
     <div id="mobile-controls">
         <div class="d-pad">
             <div id="btn-up" class="btn">W</div>
@@ -118,11 +119,10 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-        // --- 1. SCENE SETUP ---
+        // --- 1. SETUP ---
         const scene = new THREE.Scene();
-        const skyColor = 0x87CEEB; // Morning Blue
+        const skyColor = 0x87CEEB; 
         scene.background = new THREE.Color(skyColor);
         scene.fog = new THREE.Fog(skyColor, 20, 90);
 
@@ -133,15 +133,12 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // LIGHTS
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
         scene.add(hemiLight);
         const dirLight = new THREE.DirectionalLight(0xffdfba, 1.2); 
         dirLight.position.set(50, 80, 30);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        scene.add(dirLight);
+        dirLight.shadow.mapSize.width = 2048; scene.add(dirLight);
 
         // --- 2. PLAYER ---
         const playerGroup = new THREE.Group();
@@ -149,11 +146,10 @@
 
         const matBody = new THREE.MeshStandardMaterial({ color: 0x3b82f6 }); 
         const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), matBody);
-        torso.position.y = 1.2;
-        torso.castShadow = true;
+        torso.position.y = 1.2; torso.castShadow = true;
         playerGroup.add(torso);
 
-        // --- 3. WORLD BUILDER ---
+        // --- 3. LEVEL ---
         const worldObjects = [];
         const interactables = [];
         const ghosts = [];
@@ -167,15 +163,11 @@
             
             const geo = new THREE.BoxGeometry(w, h, d);
             const mat = new THREE.MeshStandardMaterial({ color: color });
-            
             if(type === 'lava') { mat.emissive = 0x7f1d1d; mat.emissiveIntensity = 0.5; }
-
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(x, y, z);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
+            mesh.castShadow = true; mesh.receiveShadow = true;
             mesh.userData = { type: type, originalY: y };
-            
             scene.add(mesh);
             if(type !== 'coin') worldObjects.push(mesh);
             return mesh;
@@ -191,65 +183,84 @@
             interactables.push(mesh);
         }
 
-        // --- LEVELS ---
-        // Lvl 1
+        // Levels
         createBox(0, 0, 0, 10, 1, 10, 'spawn');
         createBox(0, 1, 10, 4, 1, 4, 'base');
         createBox(0, 2, 16, 4, 1, 4, 'base');
         createCoin(0, 3.5, 16, 1);
         
-        // Lvl 2
         createBox(0, 3, 26, 3, 1, 8, 'base');
         createBox(0, 4, 34, 2, 1, 2, 'base');
         createBox(0, 5, 40, 2, 1, 2, 'base');
         
-        // Lvl 3 (Lava)
         createBox(0, 5, 55, 10, 1, 10, 'base');
         createBox(0, 5.1, 55, 3, 0.2, 8, 'lava');
         createCoin(0, 6.5, 55, 2);
         createBox(0, 6, 70, 1, 1, 12, 'base');
         
-        // Lvl 4 (Ghosts) - NEW
-        createBox(0, 6, 85, 4, 1, 4, 'spawn'); // Checkpoint
+        createBox(0, 6, 85, 4, 1, 4, 'spawn');
         const g1 = createBox(0, 6.5, 95, 3, 0.5, 3, 'base');
         const g2 = createBox(0, 7, 103, 3, 0.5, 3, 'base');
         const g3 = createBox(0, 7.5, 111, 3, 0.5, 3, 'base');
         ghosts.push(g1, g2, g3);
 
-        // Lvl 5 (Spinner) - NEW
         createBox(0, 8, 125, 6, 1, 15, 'base');
-        spinner = createBox(0, 9, 125, 14, 0.4, 0.4, 'lava'); // Spinning Beam
-        
-        // Win
+        spinner = createBox(0, 9, 125, 14, 0.4, 0.4, 'lava');
         createBox(0, 9, 145, 10, 1, 10, 'win');
         createCoin(0, 10.5, 145, 3);
-
-        // Floor Lava
         createBox(0, -15, 50, 300, 1, 300, 'lava');
 
-        // --- 4. GAME LOGIC ---
+        // --- 4. CONTROLS (THE NEW CAMERA SYSTEM) ---
         let velocity = new THREE.Vector3();
         let spawnPos = new THREE.Vector3(0, 5, 0);
         let deaths = 0;
         let onGround = false;
+        let isLocked = false;
         
-        const controls = new PointerLockControls(camera, document.body);
+        // Camera Variables
+        let camAngleX = Math.PI; // Horizontal (Rotation)
+        let camAngleY = 0.4;     // Vertical (Pitch)
+        const camDist = 10;
+        
         const raycaster = new THREE.Raycaster();
         const menu = document.getElementById('menu-screen');
         const playBtn = document.getElementById('play-btn');
 
-        // Input State
-        const keys = { w:0, a:0, s:0, d:0, sp:0 };
-
-        // Desktop Controls
-        playBtn.addEventListener('click', () => controls.lock());
-        controls.addEventListener('lock', () => menu.style.display = 'none');
-        controls.addEventListener('unlock', () => {
-            menu.style.display = 'flex';
-            document.querySelector('h1').innerText = "PAUSED";
-            playBtn.innerText = "RESUME";
+        // Mouse Lock
+        playBtn.addEventListener('click', () => {
+            document.body.requestPointerLock();
+        });
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = (document.pointerLockElement === document.body);
+            menu.style.display = isLocked ? 'none' : 'flex';
+            if(!isLocked) {
+                document.querySelector('h1').innerText = "PAUSED";
+                playBtn.innerText = "RESUME";
+            }
         });
 
+        // --- MOUSE LOOK ---
+        document.addEventListener('mousemove', (e) => {
+            if (isLocked) {
+                camAngleX -= e.movementX * 0.002;
+                camAngleY -= e.movementY * 0.002;
+                // Clamp Look Up/Down
+                camAngleY = Math.max(0.1, Math.min(Math.PI / 2.5, camAngleY));
+            }
+        });
+
+        // --- TOUCH LOOK (Mobile) ---
+        let touchStartX = 0;
+        const camZone = document.getElementById('cam-zone');
+        camZone.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+        camZone.addEventListener('touchmove', (e) => {
+            const deltaX = e.touches[0].clientX - touchStartX;
+            camAngleX -= deltaX * 0.005; // Rotate camera
+            touchStartX = e.touches[0].clientX;
+        });
+
+        // --- MOVEMENT INPUTS ---
+        const keys = { w:0, a:0, s:0, d:0, sp:0 };
         document.addEventListener('keydown', e => {
             if(e.code === 'KeyW') keys.w = 1;
             if(e.code === 'KeyA') keys.a = 1;
@@ -266,7 +277,7 @@
             if(e.code === 'Space') keys.sp = 0;
         });
 
-        // Mobile Controls
+        // Mobile Buttons
         const bindTouch = (id, key) => {
             const btn = document.getElementById(id);
             btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = 1; });
@@ -293,124 +304,91 @@
             const dt = Math.min(clock.getDelta(), 0.1);
             const time = Date.now() * 0.001;
 
-            // 1. GHOST PLATFORMS (Level 4)
-            // Blink every 2 seconds
+            // Environment
             const ghostsVisible = Math.sin(time * 2) > 0;
             ghosts.forEach(g => {
                 g.visible = ghostsVisible;
-                // Move physical box away if invisible so raycast fails
                 g.position.y = ghostsVisible ? g.userData.originalY : -999;
             });
+            if(spinner) spinner.rotation.y -= 2.5 * dt;
+            interactables.forEach(c => { if(c.visible) { c.rotation.y += 3 * dt; c.position.y += Math.sin(time*3)*0.005; } });
 
-            // 2. SPINNER (Level 5)
-            if(spinner) {
-                spinner.rotation.y -= 2.5 * dt; // Rotate
-            }
-
-            // 3. COINS
-            interactables.forEach(coin => {
-                if(coin.visible) {
-                    coin.rotation.y += 3 * dt;
-                    coin.position.y += Math.sin(time * 3) * 0.005;
-                }
-            });
-
-            // 4. PLAYER MOVEMENT
-            if(controls.isLocked || window.innerWidth <= 1024) { // Active if locked OR on mobile
-                // Gravity
+            if(isLocked || window.innerWidth <= 1024) {
+                // Physics
                 velocity.y -= 40 * dt;
 
-                // Move Direction
-                const speed = 15;
-                const camDir = new THREE.Vector3();
-                const camSide = new THREE.Vector3();
-                
-                camera.getWorldDirection(camDir);
-                camDir.y = 0; camDir.normalize();
-                camSide.crossVectors(camera.up, camDir).normalize();
+                // 1. CALCULATE DIRECTION BASED ON CAMERA ANGLE
+                const moveSpeed = 15;
+                // Forward vector based on Camera Y Rotation
+                const forward = new THREE.Vector3(Math.sin(camAngleX), 0, Math.cos(camAngleX)).normalize();
+                const right = new THREE.Vector3(Math.sin(camAngleX - Math.PI/2), 0, Math.cos(camAngleX - Math.PI/2)).normalize();
 
                 const moveDir = new THREE.Vector3();
-                if(keys.w) moveDir.add(camDir);
-                if(keys.s) moveDir.sub(camDir);
-                if(keys.a) moveDir.add(camSide);
-                if(keys.d) moveDir.sub(camSide);
+                if(keys.w) moveDir.sub(forward); // W moves "Forward" relative to camera
+                if(keys.s) moveDir.add(forward);
+                if(keys.a) moveDir.sub(right);
+                if(keys.d) moveDir.add(right);
 
                 if(moveDir.length() > 0) moveDir.normalize();
 
-                playerGroup.position.x += moveDir.x * speed * dt;
-                playerGroup.position.z += moveDir.z * speed * dt;
+                playerGroup.position.x += moveDir.x * moveSpeed * dt;
+                playerGroup.position.z += moveDir.z * moveSpeed * dt;
                 
-                // Character Facing
+                // Rotate Character to face movement
                 if(moveDir.length() > 0.1) {
                     const targetRot = Math.atan2(moveDir.x, moveDir.z);
                     let rotDiff = targetRot - playerGroup.rotation.y;
                     while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
                     while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
-                    playerGroup.rotation.y += rotDiff * 10 * dt;
+                    playerGroup.rotation.y += rotDiff * 15 * dt;
                 }
 
-                // Raycast Ground Check
-                const rayOrigin = playerGroup.position.clone();
-                rayOrigin.y += 1.0;
+                // Raycast
+                const rayOrigin = playerGroup.position.clone(); rayOrigin.y += 1.0;
                 raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
-                
                 const hits = raycaster.intersectObjects(worldObjects);
                 onGround = false;
-
                 if(hits.length > 0) {
                     const hit = hits[0];
                     if(hit.distance < 1.1 && velocity.y <= 0) {
-                        onGround = true;
-                        velocity.y = 0;
-                        playerGroup.position.y = hit.point.y; 
-                        
-                        // Interaction
-                        const type = hit.object.userData.type;
-                        if(type === 'lava') die();
-                        if(type === 'spawn' && hit.object.position.z > spawnPos.z + 5) {
+                        onGround = true; velocity.y = 0; playerGroup.position.y = hit.point.y;
+                        if(hit.object.userData.type === 'lava') die();
+                        if(hit.object.userData.type === 'spawn' && hit.object.position.z > spawnPos.z + 5) {
                             spawnPos.copy(hit.object.position).add(new THREE.Vector3(0,5,0));
                             document.getElementById('level-txt').innerText = Math.floor(hit.object.position.z/30)+1;
                         }
-                        if(type === 'win') document.getElementById('level-txt').innerText = "WINNER!";
                     }
                 }
-
-                // Check Coin Collisions
-                const pBox = new THREE.Box3().setFromObject(torso);
-                interactables.forEach(coin => {
-                    if(coin.visible && pBox.intersectsBox(new THREE.Box3().setFromObject(coin))) {
-                        coin.visible = false;
-                        document.getElementById('slot-'+coin.userData.id).classList.add('active');
+                interactables.forEach(c => {
+                    if(c.visible && playerGroup.position.distanceTo(c.position) < 1.5) {
+                        c.visible = false; document.getElementById('slot-'+c.userData.id).classList.add('active');
                     }
                 });
 
-                // Jump
-                if(onGround && keys.sp) {
-                    velocity.y = 16;
-                    onGround = false;
-                }
-
+                if(onGround && keys.sp) { velocity.y = 16; onGround = false; }
                 playerGroup.position.y += velocity.y * dt;
                 if(playerGroup.position.y < -20) die();
 
-                // Camera Follow
-                const camDist = 12;
-                const camHeight = 6;
-                const targetPos = playerGroup.position.clone().add(new THREE.Vector3(0, camHeight, camDist));
-                camera.position.lerp(targetPos, 0.1);
-                camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 2, 0)));
+                // 2. ORBIT CAMERA LOGIC
+                // Calculate camera position based on Angle and Distance from Player
+                const camX = playerGroup.position.x + camDist * Math.sin(camAngleX) * Math.cos(camAngleY);
+                const camY = playerGroup.position.y + camDist * Math.sin(camAngleY);
+                const camZ = playerGroup.position.z + camDist * Math.cos(camAngleX) * Math.cos(camAngleY);
+
+                // Smoothly move camera there
+                camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.2);
+                camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
             }
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // Resize
-        window.addEventListener('resize', () => {
+        window.onresize = () => {
             camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        };
     </script>
 </body>
 </html>
