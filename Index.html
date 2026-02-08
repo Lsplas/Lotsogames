@@ -3,77 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ultimate Obby v7: Animated Character</title>
+    <title>Ultimate Obby v9: High Fidelity</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', sans-serif; user-select: none; }
         
-        /* UI OVERLAYS */
+        /* UI OVERLAY */
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); color: white;
+            background: rgba(5, 5, 10, 0.9); color: white;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; cursor: pointer;
+            z-index: 100; cursor: pointer; backdrop-filter: blur(10px); transition: opacity 0.5s;
         }
         
-        /* HEADS UP DISPLAY */
-        #ui {
-            position: absolute; top: 20px; left: 20px; color: white; font-weight: bold; 
-            text-shadow: 2px 2px 0 #000; pointer-events: none; font-size: 24px;
+        #hud {
+            position: absolute; top: 20px; left: 20px; pointer-events: none;
+            display: flex; gap: 20px;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 8px;
+            border-left: 4px solid #3b82f6; color: white; font-weight: bold; font-size: 18px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* CROSSHAIR */
+        /* DYNAMIC CROSSHAIR */
+        #crosshair-wrapper {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
-            background: transparent; border: 2px solid rgba(255,255,255,0.8);
-            border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
+            width: 24px; height: 24px; border: 2px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%; transition: transform 0.1s; box-shadow: 0 0 4px white;
+        }
+        #dot {
+            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+            background: white; transform: translate(-50%, -50%); border-radius: 50%;
         }
 
-        /* INVENTORY */
-        #inventory {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; pointer-events: none;
+        /* AMMO */
+        #ammo-box {
+            position: absolute; bottom: 30px; right: 30px; 
+            text-align: right; color: white; font-family: monospace;
         }
-        .slot {
-            width: 50px; height: 50px; background: rgba(0,0,0,0.5); border: 2px solid #555;
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            color: gold; font-size: 24px; opacity: 0.3; transition: 0.3s;
-        }
-        .slot.active { opacity: 1; border-color: gold; background: rgba(255, 215, 0, 0.2); box-shadow: 0 0 15px gold; }
+        #ammo-count { font-size: 48px; font-weight: bold; color: #fbbf24; text-shadow: 0 0 15px #fbbf24; }
+        #ammo-label { font-size: 14px; opacity: 0.7; letter-spacing: 2px; }
 
-        /* MOBILE CONTROLS (Hidden on PC) */
-        #mobile-stick {
-            position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px;
-            background: rgba(255,255,255,0.1); border-radius: 50%; display: none;
+        /* KEY HINTS */
+        .keys {
+            display: flex; gap: 10px; margin-top: 20px;
         }
-        #mobile-jump {
-            position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px;
-            background: rgba(255,0,0,0.2); border: 2px solid red; border-radius: 50%; display: none;
-        }
-        @media (max-width: 1000px) {
-            #mobile-stick, #mobile-jump { display: block; }
+        .key {
+            border: 1px solid rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 4px;
+            font-size: 12px; color: #aaa;
         }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h1 style="font-size: 50px; margin: 0; color: #4ade80;">CLICK TO START</h1>
-        <p>Mouse to Look • WASD to Move • SPACE to Jump</p>
+        <h1 style="font-size: 60px; margin: 0; color: #3b82f6; text-shadow: 0 0 30px #3b82f6;">SKY BOUND</h1>
+        <p style="color: #94a3b8; font-size: 18px; margin-top: 10px;">HIGH FIDELITY UPDATE</p>
+        <div class="keys">
+            <div class="key">WASD Move</div>
+            <div class="key">SPACE Jump</div>
+            <div class="key">CLICK Shoot</div>
+        </div>
+        <p style="margin-top: 40px; opacity: 0.5; font-size: 14px;">(Click to Start)</p>
     </div>
 
-    <div id="ui">
-        <div>LEVEL: <span id="level-txt" style="color:#4ade80">1</span></div>
-        <div>DEATHS: <span id="death-txt" style="color:#f87171">0</span></div>
-    </div>
-    <div id="crosshair"></div>
-    <div id="inventory">
-        <div id="slot-1" class="slot">★</div>
-        <div id="slot-2" class="slot">★</div>
-        <div id="slot-3" class="slot">★</div>
+    <div id="hud">
+        <div class="stat-box" style="border-color: #3b82f6;">LEVEL <span id="level-txt">1</span></div>
+        <div class="stat-box" style="border-color: #ef4444;">DEATHS <span id="death-txt">0</span></div>
     </div>
 
-    <div id="mobile-stick"></div>
-    <div id="mobile-jump"></div>
+    <div id="crosshair-wrapper">
+        <div id="crosshair"></div>
+        <div id="dot"></div>
+    </div>
+
+    <div id="ammo-box">
+        <div id="ammo-count">∞</div>
+        <div id="ammo-label">PLASMA</div>
+    </div>
 
     <script type="importmap">
         {
@@ -87,86 +97,175 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- 1. SETUP SCENE ---
+        // --- 1. HIGH QUALITY SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Sky Blue
-        scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
+        scene.background = new THREE.Color(0x111827); // Deep Space Blue
+        scene.fog = new THREE.FogExp2(0x111827, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer, realistic shadows
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinema visuals
+        renderer.toneMappingExposure = 1.0;
         document.body.appendChild(renderer.domElement);
 
-        // LIGHTS
-        const amb = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(amb);
-        const sun = new THREE.DirectionalLight(0xffffff, 1);
-        sun.position.set(50, 100, 50);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048; 
-        sun.shadow.mapSize.height = 2048;
-        scene.add(sun);
+        // --- 2. LIGHTING (The key to "Good Quality") ---
+        const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x111111, 0.4);
+        scene.add(hemiLight);
 
-        // --- 2. THE NEW CHARACTER (Minecraft Style) ---
+        const dirLight = new THREE.DirectionalLight(0xfff0dd, 1.5);
+        dirLight.position.set(20, 50, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048; // High res shadows
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.bias = -0.0001;
+        scene.add(dirLight);
+
+        // --- 3. TEXTURE GENERATOR (Procedural Grid) ---
+        function createGridTexture(color1, color2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const context = canvas.getContext('2d');
+            context.fillStyle = color2;
+            context.fillRect(0,0,512,512);
+            context.fillStyle = color1;
+            // Draw grid
+            context.fillRect(0,0,256,256);
+            context.fillRect(256,256,256,256);
+            // Add border for "tile" look
+            context.strokeStyle = 'rgba(0,0,0,0.1)';
+            context.lineWidth = 4;
+            context.strokeRect(0,0,512,512);
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.minFilter = THREE.NearestFilter; // Sharp pixels
+            tex.magFilter = THREE.NearestFilter;
+            return tex;
+        }
+
+        const texFloor = createGridTexture('#334155', '#1e293b'); // Dark Slate
+        const texWall = createGridTexture('#94a3b8', '#64748b'); // Concrete
+        const texSpawn = createGridTexture('#4ade80', '#22c55e'); // Green
+
+        // --- 4. PLAYER & GUN ---
         const player = new THREE.Group();
         scene.add(player);
 
         // Materials
-        const matSkin = new THREE.MeshStandardMaterial({ color: 0x3b82f6 }); // Blue Body
-        const matHead = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow Head
-        const matLimb = new THREE.MeshStandardMaterial({ color: 0x1e293b }); // Dark Limbs
-
-        // Body Parts
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), matHead);
-        head.position.y = 1.6;
-        head.castShadow = true;
-        player.add(head);
-
+        const matSkin = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2 });
+        const matGun = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8, roughness: 0.2 });
+        
+        // Character Construction
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), matSkin);
-        body.position.y = 1.0;
-        body.castShadow = true;
-        player.add(body);
+        body.position.y = 1.0; body.castShadow = true; player.add(body);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xfacc15}));
+        head.position.y = 1.6; head.castShadow = true; player.add(head);
 
-        // Limbs (Pivot points are important for animation)
-        function createLimb(x, y, z) {
-            const group = new THREE.Group();
-            group.position.set(x, y, z);
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), matLimb);
-            mesh.position.y = -0.35; // Offset so it rotates from top
-            mesh.castShadow = true;
-            group.add(mesh);
-            player.add(group);
-            return group;
+        // Dynamic Limbs
+        const limbs = {};
+        function addLimb(name, x, y, z) {
+            const g = new THREE.Group(); g.position.set(x,y,z);
+            const m = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), new THREE.MeshStandardMaterial({color: 0x1e293b}));
+            m.position.y = -0.35; m.castShadow = true; g.add(m);
+            player.add(g); limbs[name] = g;
+        }
+        addLimb('armL', -0.45, 1.3, 0);
+        addLimb('armR', 0.45, 1.3, 0);
+        addLimb('legL', -0.2, 0.7, 0);
+        addLimb('legR', 0.2, 0.7, 0);
+
+        // Weapon System
+        const gunGroup = new THREE.Group();
+        const gunGeo = new THREE.BoxGeometry(0.12, 0.15, 0.5);
+        const gunMesh = new THREE.Mesh(gunGeo, matGun);
+        gunMesh.position.set(0, -0.6, 0.25);
+        gunGroup.add(gunMesh);
+        
+        // Muzzle Flash Light
+        const muzzleLight = new THREE.PointLight(0xffff00, 0, 5);
+        muzzleLight.position.set(0, -0.6, 0.6);
+        gunGroup.add(muzzleLight);
+        
+        limbs.armR.add(gunGroup);
+
+        // --- 5. PARTICLES & BULLETS ---
+        const particles = [];
+        function spawnParticles(pos, count, color) {
+            const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            for(let i=0; i<count; i++){
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(pos);
+                // Random explosion velocity
+                mesh.userData.vel = new THREE.Vector3(
+                    (Math.random()-0.5)*10, (Math.random()-0.5)*10, (Math.random()-0.5)*10
+                );
+                mesh.userData.life = 1.0;
+                scene.add(mesh);
+                particles.push(mesh);
+            }
         }
 
-        const armL = createLimb(-0.45, 1.3, 0);
-        const armR = createLimb( 0.45, 1.3, 0);
-        const legL = createLimb(-0.2, 0.7, 0);
-        const legR = createLimb( 0.2, 0.7, 0);
+        const bullets = [];
+        const bulletGeo = new THREE.CapsuleGeometry(0.05, 0.4, 4, 8);
+        const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfef08a }); 
 
-        // --- 3. WORLD GENERATION ---
-        const colliders = [];
-        const coins = [];
-        
-        function createBlock(x, y, z, w, h, d, type) {
-            let col = 0xaaaaaa;
-            if(type === 'spawn') col = 0x4ade80;
-            if(type === 'lava') col = 0xff4444;
-            if(type === 'win') col = 0xffd700;
+        function shoot() {
+            // 1. Recoil Animation
+            gunGroup.position.z -= 0.2; // Kick back
             
-            const mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(w, h, d),
-                new THREE.MeshStandardMaterial({ color: col })
-            );
+            // 2. Muzzle Flash
+            muzzleLight.intensity = 5;
+            setTimeout(() => muzzleLight.intensity = 0, 50);
+
+            // 3. Screen Shake
+            shakeIntensity = 0.3;
+
+            // 4. UI Expand
+            document.getElementById('crosshair').style.transform = "scale(1.5)";
+            setTimeout(() => document.getElementById('crosshair').style.transform = "scale(1)", 100);
+
+            // 5. Spawn Bullet
+            const b = new THREE.Mesh(bulletGeo, bulletMat);
+            const pos = new THREE.Vector3(); gunMesh.getWorldPosition(pos);
+            b.position.copy(pos);
+            b.quaternion.copy(player.quaternion); // Match player rotation
+            b.rotation.x = Math.PI/2; // Orient capsule length-wise
+            
+            const vel = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion).multiplyScalar(50);
+            b.userData = { vel: vel, life: 2.0 };
+            scene.add(b);
+            bullets.push(b);
+        }
+
+        // --- 6. LEVEL BUILDER (With Textures) ---
+        const colliders = [];
+        function createBlock(x, y, z, w, h, d, type) {
+            let mat;
+            if(type === 'spawn') mat = new THREE.MeshStandardMaterial({ map: texSpawn });
+            else if(type === 'lava') mat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.0 });
+            else mat = new THREE.MeshStandardMaterial({ map: texFloor });
+            
+            if(type !== 'lava' && type !== 'spawn') {
+                mat.map.repeat.set(w/2, d/2); // Tile textures properly
+            }
+
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
             mesh.position.set(x, y, z);
             
             if(type === 'lava') {
-                mesh.material.emissive = 0x990000;
-                mesh.material.emissiveIntensity = 0.5;
+                // Add glow light to lava
+                const light = new THREE.PointLight(0xff0000, 2, 10);
+                light.position.set(0, 2, 0);
+                mesh.add(light);
             } else {
-                mesh.receiveShadow = true;
-                colliders.push(mesh); // Add to physics (except lava, lava kills instantly)
+                mesh.castShadow = true; 
+                mesh.receiveShadow = true; 
+                colliders.push(mesh);
             }
             
             mesh.userData = { type: type };
@@ -174,190 +273,170 @@
             return mesh;
         }
 
-        // --- LEVEL DESIGN ---
-        createBlock(0, 0, 0, 10, 1, 10, 'spawn');
-        
-        // Jumps
-        createBlock(0, 1, 10, 4, 1, 4, 'base');
+        // Level Design
+        createBlock(0, -1, 0, 10, 1, 10, 'spawn');
+        createBlock(0, 0, 10, 4, 1, 4, 'base');
         createBlock(0, 2, 18, 4, 1, 4, 'base');
-        createBlock(0, 3, 26, 4, 1, 4, 'base');
+        createBlock(0, 4, 26, 4, 1, 4, 'base');
+        createBlock(0, 4, 35, 2, 0.5, 10, 'lava'); // Light Strip
+        createBlock(0, 3, 35, 12, 1, 12, 'base');
+        createBlock(0, 5, 50, 6, 1, 6, 'base');
+        createBlock(0, 6, 65, 10, 1, 10, 'spawn'); // Win
         
-        // Lava Trap
-        createBlock(0, 3, 36, 3, 0.5, 10, 'lava'); // Walkable lava (Trap)
-        createBlock(0, 3.5, 36, 1, 0.5, 10, 'base'); // Thin safe path
+        // Massive floor
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({color: 0x0f172a}));
+        floor.rotation.x = -Math.PI/2;
+        floor.position.y = -20;
+        scene.add(floor);
 
-        // Moving Platform (We animate this later)
-        const mover = createBlock(0, 4, 50, 6, 1, 6, 'base');
-
-        // Win Area
-        createBlock(0, 6, 70, 10, 1, 10, 'win');
-
-        // Giant Lava Floor
-        createBlock(0, -10, 50, 200, 1, 200, 'lava');
-
-
-        // --- 4. GAME ENGINE (Physics & Camera) ---
+        // --- 7. LOGIC LOOP ---
         let velocityY = 0;
         let onGround = false;
-        let spawnPos = new THREE.Vector3(0, 5, 0);
-        let deaths = 0;
+        let spawnPos = new THREE.Vector3(0, 2, 0);
+        let shakeIntensity = 0;
         
-        // Camera Variables
-        let camPitch = 0; // Up/Down
-        let camYaw = Math.PI;   // Left/Right (Start facing player back)
-        const camDist = 8;
-        
-        const raycaster = new THREE.Raycaster();
-
-        // Inputs
+        // Camera State
+        let camPitch = 0, camYaw = Math.PI;
         const keys = { w:0, a:0, s:0, d:0, sp:0 };
         
-        // MOUSE LOCK & LOOK
+        // Input
         const startScreen = document.getElementById('start-screen');
-        
-        startScreen.addEventListener('click', () => {
-            document.body.requestPointerLock();
-        });
-
-        document.addEventListener('pointerlockchange', () => {
-            if(document.pointerLockElement === document.body) {
-                startScreen.style.display = 'none';
-            } else {
-                startScreen.style.display = 'flex';
-                document.querySelector('h1').innerText = "PAUSED";
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if(document.pointerLockElement === document.body) {
-                // Adjust sensitivity here (0.002 is standard)
+        startScreen.onclick = () => document.body.requestPointerLock();
+        document.onpointerlockchange = () => startScreen.style.opacity = document.pointerLockElement ? 0 : 1;
+        document.onmousemove = (e) => {
+            if(document.pointerLockElement) {
                 camYaw -= e.movementX * 0.002;
                 camPitch -= e.movementY * 0.002;
-                
-                // Limit looking up/down
-                camPitch = Math.max(-0.5, Math.min(1.0, camPitch));
+                camPitch = Math.max(-0.6, Math.min(0.8, camPitch));
             }
-        });
-
-        // KEYBOARD
-        document.addEventListener('keydown', e => {
-            if(e.code === 'KeyW') keys.w = 1;
-            if(e.code === 'KeyS') keys.s = 1;
-            if(e.code === 'KeyA') keys.a = 1;
-            if(e.code === 'KeyD') keys.d = 1;
-            if(e.code === 'Space') keys.sp = 1;
-            if(e.code === 'KeyR') die();
-        });
-        document.addEventListener('keyup', e => {
-            if(e.code === 'KeyW') keys.w = 0;
-            if(e.code === 'KeyS') keys.s = 0;
-            if(e.code === 'KeyA') keys.a = 0;
-            if(e.code === 'KeyD') keys.d = 0;
-            if(e.code === 'Space') keys.sp = 0;
-        });
+        };
+        document.onmousedown = () => { if(document.pointerLockElement) shoot(); };
+        document.onkeydown = (e) => {
+            if(e.code==='KeyW') keys.w=1; if(e.code==='KeyS') keys.s=1;
+            if(e.code==='KeyA') keys.a=1; if(e.code==='KeyD') keys.d=1;
+            if(e.code==='Space') keys.sp=1; if(e.code==='KeyR') die();
+        };
+        document.onkeyup = (e) => {
+            if(e.code==='KeyW') keys.w=0; if(e.code==='KeyS') keys.s=0;
+            if(e.code==='KeyA') keys.a=0; if(e.code==='KeyD') keys.d=0;
+            if(e.code==='Space') keys.sp=0;
+        };
 
         function die() {
             player.position.copy(spawnPos);
             velocityY = 0;
-            deaths++;
-            document.getElementById('death-txt').innerText = deaths;
+            const dt = document.getElementById('death-txt');
+            dt.innerText = parseInt(dt.innerText) + 1;
+            // Explosion effect on death
+            spawnParticles(player.position, 20, 0xff0000);
         }
 
-        // --- 5. ANIMATION LOOP ---
         const clock = new THREE.Clock();
+        const raycaster = new THREE.Raycaster();
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = Math.min(clock.getDelta(), 0.1);
             const time = Date.now() * 0.001;
 
-            // Animate Level
-            mover.position.x = Math.sin(time) * 5; // Platform moves left/right
-
-            // 1. PHYSICS (Gravity)
-            velocityY -= 40 * dt;
+            // 1. Movement Physics
+            velocityY -= 50 * dt; // Heavier gravity feels better
             
-            // 2. MOVEMENT (Camera Relative)
-            const speed = 12;
-            let isMoving = false;
-
-            // Calculate "Forward" based purely on Camera Angle (camYaw)
-            const forwardX = Math.sin(camYaw);
-            const forwardZ = Math.cos(camYaw);
-            const rightX = Math.sin(camYaw - Math.PI/2);
-            const rightZ = Math.cos(camYaw - Math.PI/2);
-
-            const moveX = (keys.w * -forwardX) + (keys.s * forwardX) + (keys.a * -rightX) + (keys.d * rightX);
-            const moveZ = (keys.w * -forwardZ) + (keys.s * forwardZ) + (keys.a * -rightZ) + (keys.d * rightZ);
-
-            if (moveX !== 0 || moveZ !== 0) {
-                isMoving = true;
-                player.position.x += moveX * speed * dt;
-                player.position.z += moveZ * speed * dt;
-                
-                // Rotate character to face movement direction
-                player.rotation.y = Math.atan2(moveX, moveZ);
+            const speed = 14;
+            const fwd = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
+            const right = new THREE.Vector3(Math.sin(camYaw - Math.PI/2), 0, Math.cos(camYaw - Math.PI/2));
+            
+            const move = new THREE.Vector3().addScaledVector(fwd, keys.s-keys.w).addScaledVector(right, keys.d-keys.a);
+            const isMoving = move.lengthSq() > 0;
+            
+            if(isMoving) {
+                player.position.addScaledVector(move.normalize(), speed * dt);
+                player.rotation.y = Math.atan2(-move.x, -move.z); // Face movement
             }
 
-            // 3. COLLISION (Raycasting)
-            raycaster.set(player.position.clone().add(new THREE.Vector3(0, 1, 0)), new THREE.Vector3(0, -1, 0));
+            // 2. Collision
+            raycaster.set(player.position.clone().add(new THREE.Vector3(0,1,0)), new THREE.Vector3(0,-1,0));
             const hits = raycaster.intersectObjects(colliders);
-            
             onGround = false;
-            if (hits.length > 0) {
-                const hit = hits[0];
-                if (hit.distance < 1.1 && velocityY <= 0) {
-                    onGround = true;
-                    velocityY = 0;
-                    player.position.y = hit.point.y;
-                    
-                    if (hit.object.userData.type === 'win') {
-                        document.getElementById('level-txt').innerText = "WINNER!";
-                    }
-                }
+            if(hits.length > 0 && hits[0].distance < 1.1 && velocityY <= 0) {
+                onGround = true; velocityY = 0; player.position.y = hits[0].point.y;
+                if(hits[0].object.userData.type === 'win') document.getElementById('level-txt').innerText = "WINNER";
             }
-
-            // Check Lava (Separate check because lava is not a collider)
-            if(player.position.y < -5) die(); 
-            
-            // Jump
-            if (onGround && keys.sp) {
-                velocityY = 15;
-                onGround = false;
-            }
+            if(player.position.y < -10) die();
+            if(onGround && keys.sp) { velocityY = 18; onGround = false; }
             player.position.y += velocityY * dt;
 
-            // 4. CHARACTER ANIMATION (Walking)
-            if(isMoving && onGround) {
-                const walkSpeed = 10;
-                armL.rotation.x = Math.sin(time * walkSpeed) * 0.5;
-                armR.rotation.x = Math.cos(time * walkSpeed) * 0.5;
-                legL.rotation.x = Math.cos(time * walkSpeed) * 0.5;
-                legR.rotation.x = Math.sin(time * walkSpeed) * 0.5;
+            // 3. Animation & Juice
+            // Gun Return (Recoil recovery)
+            gunGroup.position.z = THREE.MathUtils.lerp(gunGroup.position.z, 0.25, dt * 10);
+            
+            // Screen Shake decay
+            shakeIntensity = THREE.MathUtils.lerp(shakeIntensity, 0, dt * 10);
+            
+            // Limb Animations
+            if(!onGround) {
+                limbs.armL.rotation.x = Math.PI; limbs.armR.rotation.x = Math.PI - 0.2; // Arms up
+                limbs.legL.rotation.x = -0.5; limbs.legR.rotation.x = 0.5;
+            } else if(isMoving) {
+                limbs.armL.rotation.x = Math.sin(time*12)*0.6;
+                limbs.legL.rotation.x = Math.sin(time*12)*0.6;
+                limbs.legR.rotation.x = Math.cos(time*12)*0.6;
+                // Gun arm sway less
+                limbs.armR.rotation.x = Math.cos(time*12)*0.2 - 1.4;
             } else {
-                // Reset Pose
-                armL.rotation.x = armR.rotation.x = legL.rotation.x = legR.rotation.x = 0;
+                limbs.armL.rotation.x = 0; limbs.armR.rotation.x = -1.4; // Idle
+                limbs.legL.rotation.x = 0; limbs.legR.rotation.x = 0;
             }
 
-            // 5. CAMERA UPDATE
-            // Simple Spherical Coordinates
-            const camX = player.position.x + camDist * Math.sin(camYaw) * Math.cos(camPitch);
-            const camY = player.position.y + camDist * Math.sin(camPitch) + 2; // +2 looks slightly down
-            const camZ = player.position.z + camDist * Math.cos(camYaw) * Math.cos(camPitch);
+            // 4. Bullets & Particles
+            for(let i=bullets.length-1; i>=0; i--) {
+                const b = bullets[i];
+                const moveDist = b.userData.vel.clone().multiplyScalar(dt);
+                
+                // Bullet Collision
+                raycaster.set(b.position, b.userData.vel.clone().normalize());
+                const bHits = raycaster.intersectObjects(colliders);
+                if(bHits.length > 0 && bHits[0].distance < moveDist.length()) {
+                    spawnParticles(bHits[0].point, 5, 0xffff00); // Sparks
+                    scene.remove(b); bullets.splice(i,1); continue;
+                }
+                
+                b.position.add(moveDist);
+                b.userData.life -= dt;
+                if(b.userData.life <= 0) { scene.remove(b); bullets.splice(i,1); }
+            }
 
-            camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.2);
-            camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 1.5, 0))); // Look at head
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.position.addScaledVector(p.userData.vel, dt);
+                p.rotation.x += dt * 5;
+                p.userData.vel.y -= 20 * dt; // Gravity on particles
+                p.scale.multiplyScalar(0.95); // Shrink
+                if(p.scale.x < 0.01) { scene.remove(p); particles.splice(i,1); }
+            }
+
+            // 5. Camera Follow
+            const camDist = 7;
+            const camX = player.position.x + camDist * Math.sin(camYaw) * Math.cos(camPitch);
+            const camY = player.position.y + camDist * Math.sin(camPitch) + 2.5;
+            const camZ = player.position.z + camDist * Math.cos(camYaw) * Math.cos(camPitch);
+            
+            // Add Shake
+            const shakeX = (Math.random()-0.5) * shakeIntensity;
+            const shakeY = (Math.random()-0.5) * shakeIntensity;
+
+            camera.position.lerp(new THREE.Vector3(camX + shakeX, camY + shakeY, camZ), 0.15);
+            camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
 
             renderer.render(scene, camera);
         }
         animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
+        
+        window.onresize = () => {
             camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        }
     </script>
 </body>
 </html>
