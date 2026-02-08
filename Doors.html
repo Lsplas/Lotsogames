@@ -2,63 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DOORS: LIGHTS ON EDITION</title>
+    <title>DOORS: OMEGA EDITION</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
-        
-        /* UI OVERLAY */
-        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; pading: 20px; }
-        
-        #top-bar { padding: 20px; color: white; display: flex; justify-content: space-between; font-weight: bold; text-shadow: 1px 1px 2px black; }
-        #objective { color: #fbbf24; font-size: 20px; }
-        
-        #center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
-        #crosshair { width: 8px; height: 8px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; border: 1px solid black; }
-        #interact { margin-top: 15px; color: white; font-weight: bold; font-size: 18px; text-shadow: 0 0 4px black; opacity: 0; transition: opacity 0.2s; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; user-select: none; }
 
-        /* POSTURE INDICATOR */
-        #posture-icon {
-            position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px;
-            background: rgba(0,0,0,0.5); color: white; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; border: 2px solid #555;
-        }
+        /* UI CONTAINER */
+        #game-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+
+        /* HUD TOP */
+        #hud-top { background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); padding: 20px; color: white; display: flex; flex-direction: column; align-items: center; }
+        
+        /* THE MAP */
+        #map-container { display: flex; gap: 5px; margin-bottom: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; border: 1px solid #444; }
+        .map-room { width: 30px; height: 30px; background: #333; border: 2px solid #555; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #777; transition: 0.3s; }
+        .map-room.active { background: #fbbf24; color: black; border-color: white; box-shadow: 0 0 10px #fbbf24; transform: scale(1.2); }
+        .map-room.cleared { background: #065f46; border-color: #10b981; color: #a7f3d0; }
+        .map-room.boss { border-color: #ef4444; }
+
+        #status-text { font-size: 24px; font-weight: bold; text-shadow: 0 2px 4px black; letter-spacing: 2px; }
+
+        /* HUD CENTER */
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 4px black; }
+        #interact-label { position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 20px; text-shadow: 0 0 5px black; opacity: 0; transition: opacity 0.2s; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid white; }
+
+        /* HIDING OVERLAY */
+        #hiding-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(90deg, #000 0px, #000 50px, transparent 50px, transparent 60px); opacity: 0.9; display: none; z-index: 50; }
+        #hiding-text { position: absolute; bottom: 20%; width: 100%; text-align: center; color: white; font-size: 20px; z-index: 51; display: none; }
+
+        /* JUMPSCARE */
+        #jumpscare { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; display: none; align-items: center; justify-content: center; z-index: 100; flex-direction: column; }
+        #jumpscare h1 { color: #ef4444; font-size: 80px; text-transform: uppercase; margin: 0; text-shadow: 0 0 20px red; }
+        #jumpscare p { color: white; font-size: 20px; margin-top: 20px; cursor: pointer; text-decoration: underline; pointer-events: auto; }
 
         /* START SCREEN */
-        #start {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #333; color: white; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer;
-        }
-        h1 { margin: 0; font-size: 50px; color: #fbbf24; }
-        .keys { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; margin-top: 30px; text-align: left; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px; }
-        b { color: #fbbf24; }
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .btn { padding: 15px 40px; background: #fbbf24; color: black; font-weight: bold; font-size: 24px; border: none; cursor: pointer; margin-top: 30px; border-radius: 5px; transition: 0.2s; }
+        .btn:hover { background: white; transform: scale(1.05); }
     </style>
 </head>
 <body>
 
-    <div id="start">
-        <h1>DOORS: LIGHTS ON</h1>
-        <p>[ CLICK TO PLAY ]</p>
-        <div class="keys">
-            <b>WASD</b> <span>Move Character</span>
-            <b>C</b> <span>Crouch / Stand</span>
-            <b>SHIFT</b> <span>Sprint</span>
-            <b>E</b> <span>Interact</span>
+    <div id="start-screen">
+        <h1 style="font-size: 60px; color: #fbbf24; margin: 0;">DOORS</h1>
+        <h2 style="color: #666; margin-top: 10px;">OMEGA UPDATE</h2>
+        <div style="text-align: left; margin-top: 20px; background: #222; padding: 20px; border-radius: 10px;">
+            <p>🔦 <b>LIGHTS:</b> On (High Visibility)</p>
+            <p>🚪 <b>WARDROBES:</b> Press <b>E</b> to Hide</p>
+            <p>👻 <b>RUSH:</b> Hide when lights flicker!</p>
+            <p>👁️ <b>SEEK:</b> Run at Door 10!</p>
+            <p>👹 <b>FIGURE:</b> Crouch (C) at Door 20!</p>
         </div>
+        <button class="btn" id="start-btn">ENTER HOTEL</button>
     </div>
 
-    <div id="ui">
-        <div id="top-bar">
-            <span>DOOR 100 (TRAINING)</span>
-            <span id="objective">FUSES: 0 / 10</span>
+    <div id="game-ui">
+        <div id="hud-top">
+            <div id="map-container">
+                </div>
+            <div id="status-text">DOOR 000</div>
         </div>
-        <div id="center">
-            <div id="crosshair"></div>
-            <div id="interact">[E] INTERACT</div>
-        </div>
-        <div id="posture-icon">🏃</div>
+        <div id="interact-label">[E] OPEN</div>
+        <div id="crosshair"></div>
+    </div>
+
+    <div id="hiding-overlay"></div>
+    <div id="hiding-text">YOU ARE HIDDEN (Hold W to Leave)</div>
+
+    <div id="jumpscare">
+        <h1 id="death-reason">YOU DIED</h1>
+        <p onclick="location.reload()">CLICK TO REVIVE</p>
     </div>
 
     <script type="importmap">
@@ -69,267 +81,441 @@
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-        // --- SETUP ---
+        // --- AUDIO SYSTEM (Procedural) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if(type === 'wood') { // Door
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(40, now+0.3);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                osc.start(now); osc.stop(now+0.3);
+            }
+            if(type === 'rush') { // Rush roar
+                const noise = audioCtx.createBufferSource();
+                const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate);
+                const d = buf.getChannelData(0);
+                for(let i=0; i<d.length; i++) d[i] = (Math.random()-0.5)*2;
+                noise.buffer = buf;
+                const nGain = audioCtx.createGain();
+                noise.connect(nGain); nGain.connect(audioCtx.destination);
+                nGain.gain.setValueAtTime(0, now); nGain.gain.linearRampToValueAtTime(1, now+1); nGain.gain.linearRampToValueAtTime(0, now+4);
+                noise.start(now);
+            }
+            if(type === 'scream') { // Death
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(1000, now+0.5);
+                gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
+                osc.start(now); osc.stop(now+0.5);
+            }
+        }
+
+        // --- TEXTURES (Procedural - No Black Screens) ---
+        function createColorTex(color) {
+            const c = document.createElement('canvas'); c.width=64; c.height=64;
+            const x = c.getContext('2d'); x.fillStyle=color; x.fillRect(0,0,64,64);
+            const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+        }
+        function createWoodTex() {
+            const c = document.createElement('canvas'); c.width=128; c.height=128;
+            const x = c.getContext('2d'); x.fillStyle='#4a3b2a'; x.fillRect(0,0,128,128);
+            x.strokeStyle='#3e3123'; x.lineWidth=2;
+            for(let i=0;i<20;i++){x.beginPath();x.moveTo(Math.random()*128,0);x.lineTo(Math.random()*128,128);x.stroke();}
+            const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+        }
+        function createSeekTex() {
+            const c = document.createElement('canvas'); c.width=128; c.height=128;
+            const x = c.getContext('2d'); x.fillStyle='black'; x.fillRect(0,0,128,128);
+            x.fillStyle='white'; x.beginPath(); x.arc(64,64,30,0,Math.PI*2); x.fill(); // Eye
+            x.fillStyle='black'; x.beginPath(); x.arc(64,64,10,0,Math.PI*2); x.fill(); // Pupil
+            return new THREE.CanvasTexture(c);
+        }
+
+        const texWall = createColorTex('#78716c');
+        const texFloor = createColorTex('#292524');
+        const texWood = createWoodTex();
+        const texSeek = createSeekTex();
+
+        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x505050); // Grey background, not black
-        // remove fog or make it very far
-        scene.fog = new THREE.Fog(0x505050, 20, 60); 
+        scene.background = new THREE.Color(0x222222); // Dark Grey, not black
+        scene.fog = new THREE.Fog(0x111111, 5, 25);
 
-        // --- LIGHTING (Make it bright!) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // High intensity ambient
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(10, 20, 10);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-
+        // LIGHTING FIX (Super Bright)
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+        scene.add(hemiLight);
+        const playerLight = new THREE.PointLight(0xffaa00, 0.8, 15);
+        
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
         const renderer = new THREE.WebGLRenderer({antialias:true});
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // --- PLAYER CONTROLLER ---
-        const controls = new PointerLockControls(camera, document.body);
         const player = new THREE.Group();
         player.add(camera);
+        player.add(playerLight);
         scene.add(player);
-        player.position.set(0, 1.7, 5); // Start height
+        player.position.set(0, 1.6, 2);
 
-        // HAND MODEL
-        const hand = new THREE.Group();
-        const handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.25), new THREE.MeshStandardMaterial({color: 0xffdbac}));
-        hand.add(handMesh);
-        hand.position.set(0.4, -0.3, -0.5);
-        camera.add(hand);
-
-        // GAME STATE
-        const keys = { w:0, a:0, s:0, d:0, shift:0 };
-        const state = { 
-            crouching: false, 
-            targetHeight: 1.7, 
-            currentHeight: 1.7,
-            fuses: 0,
-            dead: false
+        // --- GAME LOGIC ---
+        const state = {
+            room: 0,
+            isHiding: false,
+            isDead: false,
+            isCrouching: false,
+            isSprinting: false,
+            seekChase: false
         };
 
-        // --- LEVEL GENERATION (Door 100 Layout) ---
+        const rooms = [];
         const interactables = [];
-        const walls = []; // For simple collision logic
+        const entities = [];
 
-        function createLevel() {
-            // Floor
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 40), new THREE.MeshStandardMaterial({color: 0x333333}));
-            floor.rotation.x = -Math.PI/2;
-            floor.receiveShadow = true;
-            scene.add(floor);
-
-            // Ceiling (High visibility)
-            const ceil = new THREE.Mesh(new THREE.PlaneGeometry(30, 40), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
-            ceil.rotation.x = Math.PI/2;
-            ceil.position.y = 6;
-            scene.add(ceil);
-
-            // Walls Helper
-            function addWall(w, h, d, x, y, z) {
-                const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({color: 0x666666}));
-                wall.position.set(x, y, z);
-                wall.castShadow = true;
-                wall.receiveShadow = true;
-                scene.add(wall);
-                walls.push(wall); // Add to collision list
-            }
-
-            // Outer Walls
-            addWall(1, 6, 40, -15, 3, 0); // Left
-            addWall(1, 6, 40, 15, 3, 0); // Right
-            addWall(30, 6, 1, 0, 3, -20); // Back
-            addWall(30, 6, 1, 0, 3, 20); // Front
-
-            // Shelves/Obstacles (To crouch behind)
-            for(let i=0; i<6; i++) {
-                const sx = (Math.random()-0.5) * 20;
-                const sz = (Math.random()-0.5) * 30;
-                addWall(4, 3, 1, sx, 1.5, sz);
-            }
-
-            // Breaker Box
-            const box = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.5), new THREE.MeshStandardMaterial({color: 0x222222}));
-            box.position.set(0, 2.5, -19.5);
-            box.userData = { type: 'box' };
-            interactables.push(box);
-            scene.add(box);
-
-            // 10 Fuses
-            for(let i=0; i<10; i++) {
-                const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4), new THREE.MeshStandardMaterial({color: 0x00ff00}));
-                fuse.rotation.z = Math.PI/2;
-                fuse.position.set((Math.random()-0.5)*25, 0.5, (Math.random()-0.5)*35);
-                fuse.userData = { type: 'fuse' };
-                interactables.push(fuse);
-                scene.add(fuse);
-                
-                // Add a glow so they are easy to see
-                const glow = new THREE.PointLight(0x00ff00, 1, 3);
-                fuse.add(glow);
+        // --- MAP SYSTEM ---
+        function updateMap() {
+            const container = document.getElementById('map-container');
+            container.innerHTML = '';
+            // Show last 2 rooms, current, and next 2
+            for(let i = state.room - 2; i <= state.room + 3; i++) {
+                if(i < 0) continue;
+                const div = document.createElement('div');
+                div.className = 'map-room';
+                div.innerText = i;
+                if(i === state.room) div.classList.add('active');
+                if(i < state.room) div.classList.add('cleared');
+                if(i === 10 || i === 20) div.classList.add('boss'); // Boss rooms
+                container.appendChild(div);
             }
         }
-        createLevel();
 
-        // --- THE FIGURE (Simple AI) ---
+        // --- GENERATION ---
+        function createRoom(index) {
+            const group = new THREE.Group();
+            const zPos = index * 12;
+            group.position.z = zPos;
+
+            // DETERMINE ROOM TYPE
+            let isHallway = (index === 10); // Seek
+            let isLibrary = (index === 20); // Figure
+            
+            const width = isLibrary ? 12 : 6;
+            const length = isHallway ? 40 : (isLibrary ? 20 : 12);
+
+            // Floor
+            const fl = new THREE.Mesh(new THREE.PlaneGeometry(width, length), new THREE.MeshStandardMaterial({map:texFloor}));
+            fl.rotation.x = -Math.PI/2; fl.position.set(0,0,length/2); group.add(fl);
+            
+            // Ceiling
+            const cl = new THREE.Mesh(new THREE.PlaneGeometry(width, length), new THREE.MeshStandardMaterial({color:0x222222}));
+            cl.rotation.x = Math.PI/2; cl.position.set(0,4,length/2); group.add(cl);
+
+            // Walls
+            const wMat = new THREE.MeshStandardMaterial({map:texWall});
+            const w1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4, length), wMat); w1.position.set(-width/2, 2, length/2); group.add(w1);
+            const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4, length), wMat); w2.position.set(width/2, 2, length/2); group.add(w2);
+
+            // Lights (Roof)
+            const bulb = new THREE.PointLight(0xffffee, 0.8, 10);
+            bulb.position.set(0, 3.8, length/2);
+            group.add(bulb);
+            group.userData = { light: bulb, id: index };
+
+            // WARDROBES (Randomly in normal rooms)
+            if(!isHallway && !isLibrary && index > 0) {
+                if(Math.random() > 0.3) {
+                    const ward = new THREE.Group();
+                    const box = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3, 1), new THREE.MeshStandardMaterial({map:texWood, color:0x554433}));
+                    ward.add(box);
+                    ward.position.set((Math.random()>0.5?1:-1)*(width/2 - 1), 1.5, length/2);
+                    ward.userData = { type: 'wardrobe' };
+                    group.add(ward);
+                    interactables.push(ward);
+                }
+            }
+
+            // DOORS
+            if(!isHallway) {
+                const door = new THREE.Mesh(new THREE.BoxGeometry(2.2, 3, 0.2), new THREE.MeshStandardMaterial({map:texWood}));
+                door.position.set(0, 1.5, length);
+                door.userData = { type: 'door', index: index + 1 };
+                group.add(door);
+                interactables.push(door);
+                
+                // Number
+                const canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64;
+                const ctx = canvas.getContext('2d'); ctx.fillStyle='black'; ctx.fillRect(0,0,64,64);
+                ctx.fillStyle='#fbbf24'; ctx.font='bold 40px Arial'; ctx.fillText((index+1)+"", 10, 45);
+                const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.5), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas)}));
+                plate.position.set(0, 2.5, 0.12); door.add(plate);
+            } else {
+                // Seek Hallway has no door, just open end
+                const trigger = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 1), new THREE.MeshBasicMaterial({visible:false}));
+                trigger.position.set(0,2,length-2);
+                trigger.userData = { type: 'seek_end', index: index+1 };
+                group.add(trigger);
+                interactables.push(trigger);
+            }
+
+            // BOSSES
+            if(isLibrary) setupFigure(group, width, length, zPos);
+
+            scene.add(group);
+            rooms.push(group);
+            if(rooms.length > 5) scene.remove(rooms.shift());
+        }
+
+        // --- ENTITIES ---
+        
+        // 1. RUSH (Random Event)
+        let rushActive = false;
+        const rushMesh = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0x222222}));
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(3,3), new THREE.MeshBasicMaterial({map:texSeek, transparent:true}));
+        face.position.z = 1; rushMesh.add(face);
+        scene.add(rushMesh); rushMesh.position.y = -100;
+
+        function triggerRush() {
+            if(rushActive || state.room === 10 || state.room === 20) return;
+            rushActive = true;
+            console.log("Rush Spawned");
+
+            // Flicker Lights
+            let count = 0;
+            const flicker = setInterval(() => {
+                rooms.forEach(r => { if(r.userData.light) r.userData.light.intensity = Math.random()>0.5 ? 0.1 : 1.0; });
+                count++;
+                if(count > 20) {
+                    clearInterval(flicker);
+                    rooms.forEach(r => { if(r.userData.light) r.userData.light.intensity = 1.0; });
+                    startRushMove();
+                }
+            }, 100);
+
+            function startRushMove() {
+                playSound('rush');
+                const startZ = (state.room - 2) * 12;
+                const endZ = (state.room + 2) * 12;
+                let t = 0;
+                
+                const loop = setInterval(() => {
+                    if(state.isDead) { clearInterval(loop); return; }
+                    t += 0.02;
+                    rushMesh.position.set(0, 2, THREE.MathUtils.lerp(startZ, endZ, t));
+                    
+                    // Kill Check
+                    if(Math.abs(rushMesh.position.z - player.position.z) < 5) {
+                        if(!state.isHiding) die("RUSH CAUGHT YOU - HIDE IN A WARDROBE!");
+                    }
+
+                    if(t >= 1) {
+                        clearInterval(loop);
+                        rushActive = false;
+                        rushMesh.position.y = -100;
+                    }
+                }, 16);
+            }
+        }
+
+        // 2. SEEK (Door 10 Chase)
+        const seekMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 2), new THREE.MeshBasicMaterial({color:0x000000}));
+        const seekEye = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:texSeek, transparent:true}));
+        seekEye.position.set(0, 1.5, 0.4); seekMesh.add(seekEye);
+        scene.add(seekMesh); seekMesh.position.y = -100;
+
+        function startSeekChase() {
+            if(state.seekChase) return;
+            state.seekChase = true;
+            document.getElementById('status-text').innerText = "RUN!!!";
+            document.getElementById('status-text').style.color = "red";
+            
+            // Spawn Seek behind
+            seekMesh.position.set(0, 1.5, (state.room-1)*12);
+            playSound('scream');
+
+            const chase = setInterval(() => {
+                if(state.isDead || state.room > 10) { 
+                    clearInterval(chase); 
+                    seekMesh.position.y = -100;
+                    state.seekChase = false;
+                    document.getElementById('status-text').style.color = "white";
+                    return; 
+                }
+
+                // Move Seek
+                const speed = 7.5 * 0.016; // Slightly faster than walking
+                const dir = new THREE.Vector3().subVectors(player.position, seekMesh.position).normalize();
+                seekMesh.position.addScaledVector(dir, speed);
+                seekMesh.lookAt(player.position);
+
+                if(player.position.distanceTo(seekMesh.position) < 1.5) {
+                    die("SEEK CAUGHT YOU - RUN FASTER!");
+                }
+            }, 16);
+        }
+
+        // 3. FIGURE (Door 20 Boss)
         const figure = new THREE.Group();
-        const fBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.8), new THREE.MeshStandardMaterial({color: 0x880000}));
-        fBody.position.y = 0.9;
-        const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshStandardMaterial({color: 0xaa0000}));
-        fHead.position.y = 2.0;
-        const fMouth = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.4), new THREE.MeshBasicMaterial({color: 0x000000}));
-        fMouth.position.set(0, 2.0, 0.3);
-        figure.add(fBody, fHead, fMouth);
-        scene.add(figure);
+        function setupFigure(roomGroup, w, l, zBase) {
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2), new THREE.MeshStandardMaterial({color:0x880000}));
+            body.position.y = 1.5;
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshStandardMaterial({color:0xaa0000}));
+            head.position.y = 2.7;
+            const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.4), new THREE.MeshBasicMaterial({color:0x000000}));
+            mouth.position.set(0, 2.7, 0.3);
+            figure.add(body, head, mouth);
+            figure.position.set(0, 0, zBase + l/2);
+            scene.add(figure);
+            
+            // Logic
+            const interval = setInterval(() => {
+                if(state.room !== 20 || state.isDead) { clearInterval(interval); scene.remove(figure); return; }
+                
+                // Patrol
+                const time = Date.now() * 0.001;
+                figure.position.x = Math.sin(time) * 4;
+                figure.position.z = (zBase + l/2) + Math.cos(time/2) * 6;
+                figure.lookAt(player.position.x, 1.6, player.position.z);
 
-        // --- EVENTS ---
-        document.addEventListener('keydown', (e) => {
-            if(e.code === 'KeyW') keys.w = 1;
-            if(e.code === 'KeyA') keys.a = 1;
-            if(e.code === 'KeyS') keys.s = 1;
-            if(e.code === 'KeyD') keys.d = 1;
-            if(e.code === 'ShiftLeft') keys.shift = 1;
-            if(e.code === 'KeyC') toggleCrouch();
-            if(e.code === 'KeyE') checkInteract();
-        });
-        document.addEventListener('keyup', (e) => {
-            if(e.code === 'KeyW') keys.w = 0;
-            if(e.code === 'KeyA') keys.a = 0;
-            if(e.code === 'KeyS') keys.s = 0;
-            if(e.code === 'KeyD') keys.d = 0;
-            if(e.code === 'ShiftLeft') keys.shift = 0;
-        });
+                // Detection
+                const dist = player.position.distanceTo(figure.position);
+                if(dist < 8) {
+                    // Hearing Check
+                    const isMoving = (keys.w||keys.a||keys.s||keys.d);
+                    if(dist < 3 && isMoving && !state.isCrouching) die("FIGURE HEARD YOU - USE CROUCH (C)!");
+                    if(dist < 1.2) die("FIGURE TOUCHED YOU!");
+                }
+            }, 16);
+        }
 
-        document.getElementById('start').onclick = () => {
-            document.getElementById('start').style.display = 'none';
+        function die(reason) {
+            state.isDead = true;
+            document.exitPointerLock();
+            document.getElementById('jumpscare').style.display = 'flex';
+            document.getElementById('death-reason').innerText = "DEAD";
+            const p = document.createElement('p'); p.innerText = reason; p.style.color="white";
+            document.getElementById('jumpscare').appendChild(p);
+            playSound('scream');
+        }
+
+        // --- INPUT & MOVEMENT ---
+        const keys = { w:0, a:0, s:0, d:0 };
+        const controls = new PointerLockControls(camera, document.body);
+        const raycaster = new THREE.Raycaster();
+
+        document.getElementById('start-btn').onclick = () => {
+            document.getElementById('start-screen').style.display = 'none';
             controls.lock();
+            createRoom(0); createRoom(1); updateMap();
         };
 
-        function toggleCrouch() {
-            state.crouching = !state.crouching;
-            state.targetHeight = state.crouching ? 0.6 : 1.7; // Lower camera to 0.6 when crouching
-            document.getElementById('posture-icon').innerText = state.crouching ? '🧎' : '🏃';
-        }
+        document.addEventListener('keydown', e => {
+            if(e.code === 'KeyW') keys.w=1; if(e.code === 'KeyS') keys.s=1;
+            if(e.code === 'KeyA') keys.a=1; if(e.code === 'KeyD') keys.d=1;
+            if(e.code === 'ShiftLeft') state.isSprinting = true;
+            if(e.code === 'KeyC') { state.isCrouching = true; camera.position.y = 0.8; }
+            if(e.code === 'KeyE') interact();
+        });
+        document.addEventListener('keyup', e => {
+            if(e.code === 'KeyW') keys.w=0; if(e.code === 'KeyS') keys.s=0;
+            if(e.code === 'KeyA') keys.a=0; if(e.code === 'KeyD') keys.d=0;
+            if(e.code === 'ShiftLeft') state.isSprinting = false;
+            if(e.code === 'KeyC') { state.isCrouching = false; camera.position.y = 1.6; }
+        });
 
-        const raycaster = new THREE.Raycaster();
-        function checkInteract() {
+        function interact() {
+            if(state.isDead) return;
+
+            // LEAVE WARDROBE
+            if(state.isHiding) {
+                state.isHiding = false;
+                player.position.copy(player.userData.lastPos);
+                player.position.z += 1;
+                document.getElementById('hiding-overlay').style.display = 'none';
+                document.getElementById('hiding-text').style.display = 'none';
+                return;
+            }
+
             raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-            const hits = raycaster.intersectObjects(interactables);
+            const hits = raycaster.intersectObjects(interactables, true);
             if(hits.length > 0 && hits[0].distance < 3) {
-                const obj = hits[0].object;
-                if(obj.userData.type === 'fuse') {
-                    state.fuses++;
-                    scene.remove(obj);
-                    // remove from interactables array
-                    const idx = interactables.indexOf(obj);
-                    if(idx > -1) interactables.splice(idx, 1);
-                    document.getElementById('objective').innerText = `FUSES: ${state.fuses} / 10`;
+                let obj = hits[0].object;
+                while(!obj.userData.type && obj.parent) obj = obj.parent;
+                const type = obj.userData.type;
+
+                if(type === 'door') {
+                    playSound('wood');
+                    obj.rotation.y = -Math.PI/2;
+                    obj.position.x += 1;
+                    obj.userData.type = 'open_door'; // Disable
+                    state.room++;
+                    document.getElementById('status-text').innerText = "DOOR " + state.room.toString().padStart(3,'0');
+                    updateMap();
+                    createRoom(state.room + 1);
+
+                    // EVENTS
+                    if(state.room === 10) startSeekChase();
+                    if(state.room > 2 && state.room < 10 && Math.random() < 0.3) setTimeout(triggerRush, 2000);
                 }
-                else if(obj.userData.type === 'box') {
-                    if(state.fuses >= 10) {
-                        alert("ELEVATOR POWERED! YOU WIN!");
-                        location.reload();
-                    } else {
-                        alert("NEED MORE FUSES!");
-                    }
+                else if(type === 'wardrobe') {
+                    state.isHiding = true;
+                    player.userData.lastPos = player.position.clone();
+                    player.position.copy(obj.position);
+                    player.rotation.y = Math.PI;
+                    document.getElementById('hiding-overlay').style.display = 'block';
+                    document.getElementById('hiding-text').style.display = 'block';
                 }
             }
         }
 
-        // --- GAME LOOP ---
+        // --- MAIN LOOP ---
         const clock = new THREE.Clock();
-        
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
 
-            if(controls.isLocked && !state.dead) {
-                // 1. CROUCH SMOOTHING
-                // Lerp current height to target height
-                state.currentHeight = THREE.MathUtils.lerp(state.currentHeight, state.targetHeight, 10 * dt);
-                player.position.y = state.currentHeight;
-
-                // 2. MOVEMENT
-                // Speed depends on state
-                let speed = 4.0;
-                if(state.crouching) speed = 2.0;
-                if(keys.shift && !state.crouching) speed = 7.0;
-
-                const direction = new THREE.Vector3();
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-                forward.y = 0; forward.normalize();
-                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-                right.y = 0; right.normalize();
-
-                if(keys.w) direction.add(forward);
-                if(keys.s) direction.sub(forward);
-                if(keys.a) direction.sub(right);
-                if(keys.d) direction.add(right);
-
-                if(direction.length() > 0) {
-                    direction.normalize();
-                    // Simple wall collision check could go here, omitting for smoothness
-                    player.position.addScaledVector(direction, speed * dt);
-                    
-                    // Hand Bobbing
-                    const bobFreq = speed * 2;
-                    hand.position.y = -0.3 + Math.sin(Date.now() * 0.01 * speed) * 0.02;
+            if(!state.isDead && !state.isHiding && controls.isLocked) {
+                let speed = state.isCrouching ? 2 : (state.isSprinting ? 9 : 5);
+                const dir = new THREE.Vector3();
+                const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); fwd.y=0; fwd.normalize();
+                const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion); right.y=0; right.normalize();
+                
+                if(keys.w) dir.add(fwd); if(keys.s) dir.sub(fwd);
+                if(keys.a) dir.sub(right); if(keys.d) dir.add(right);
+                
+                if(dir.length() > 0) {
+                    dir.normalize();
+                    player.position.addScaledVector(dir, speed * dt);
+                }
+                
+                // Seek Hallway Trigger (Auto door)
+                if(state.room === 10 && player.position.z > (10*12 + 35)) {
+                    state.room++;
+                    state.seekChase = false; // Escaped
+                    createRoom(11);
+                    updateMap();
                 }
             }
 
-            // 3. FIGURE LOGIC
-            // Simple circular patrol
-            const time = Date.now() * 0.001;
-            figure.position.x = Math.sin(time * 0.5) * 10;
-            figure.position.z = Math.cos(time * 0.5) * 10;
-            figure.lookAt(player.position.x, 1.5, player.position.z);
-            
-            // Detection
-            const dist = player.position.distanceTo(figure.position);
-            if(dist < 3) {
-                if(!state.crouching && !state.dead) {
-                    // Visual warning only in training mode
-                    document.getElementById('objective').style.color = 'red';
-                    document.getElementById('objective').innerText = "HE HEARS YOU! (CROUCH!)";
-                } else if (dist < 1.5) {
-                    // Caught
-                    document.exitPointerLock();
-                    alert("CAUGHT BY FIGURE! Reloading...");
-                    location.reload();
-                    state.dead = true;
-                }
-            } else {
-                document.getElementById('objective').style.color = '#fbbf24';
-            }
-
-
-            // 4. INTERACTION UI
-            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-            const hits = raycaster.intersectObjects(interactables);
-            const ui = document.getElementById('interact');
-            if(hits.length > 0 && hits[0].distance < 3) {
-                ui.style.opacity = 1;
-                ui.innerText = hits[0].object.userData.type === 'fuse' ? "[E] TAKE FUSE" : "[E] USE BREAKER";
-            } else {
-                ui.style.opacity = 0;
+            // UI Raycast
+            if(!state.isHiding) {
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                const hits = raycaster.intersectObjects(interactables, true);
+                const label = document.getElementById('interact-label');
+                if(hits.length > 0 && hits[0].distance < 3) {
+                    let obj = hits[0].object;
+                    while(!obj.userData.type && obj.parent) obj = obj.parent;
+                    if(obj.userData.type === 'door') { label.style.opacity=1; label.innerText="[E] OPEN"; }
+                    else if(obj.userData.type === 'wardrobe') { label.style.opacity=1; label.innerText="[E] HIDE"; }
+                    else label.style.opacity=0;
+                } else label.style.opacity=0;
             }
 
             renderer.render(scene, camera);
         }
-
         animate();
-
-        window.onresize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        };
+        window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
     </script>
 </body>
 </html>
