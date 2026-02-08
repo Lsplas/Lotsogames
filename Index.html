@@ -3,110 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ultimate Obby v6: Free Look</title>
+    <title>Ultimate Obby v7: Animated Character</title>
     <style>
-        /* --- UI STYLES --- */
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; user-select: none; -webkit-user-select: none; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; }
         
-        #hud {
+        /* UI OVERLAYS */
+        #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; padding: 20px; box-sizing: border-box;
-            display: flex; flex-direction: column; justify-content: space-between; z-index: 5;
-        }
-        .stats { font-size: 20px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000; }
-        
-        .inventory-box {
-            display: flex; gap: 10px; align-self: center; margin-bottom: 20px; pointer-events: auto;
-        }
-        .item-slot {
-            width: 40px; height: 40px; background: rgba(0,0,0,0.5); border: 2px solid white;
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; color: gold; opacity: 0.3; transition: opacity 0.3s;
-        }
-        .item-slot.active { opacity: 1; background: rgba(255, 215, 0, 0.3); border-color: gold; box-shadow: 0 0 10px gold; }
-
-        /* PAUSE MENU */
-        #menu-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.85); color: white;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; color: white; transition: opacity 0.2s;
+            z-index: 100; cursor: pointer;
         }
-        h1 { font-size: 50px; margin: 0; color: #60a5fa; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px #60a5fa; text-align: center; }
-        p { color: #cbd5e1; font-size: 16px; margin-bottom: 20px; text-align: center; max-width: 80%; }
-        button#play-btn {
-            padding: 15px 50px; font-size: 22px; font-weight: bold; border-radius: 50px; border: none;
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6); color: white; cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        /* --- MOBILE CONTROLS --- */
-        #mobile-controls {
-            position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px;
-            pointer-events: none; display: none; 
-            justify-content: space-between; z-index: 50;
-        }
-        .d-pad { position: relative; width: 150px; height: 150px; pointer-events: auto; }
-        .btn {
-            position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.5); border-radius: 10px; backdrop-filter: blur(2px);
-            display: flex; justify-content: center; align-items: center; color: white; font-weight: bold;
-        }
-        .btn:active { background: rgba(255,255,255,0.5); }
         
-        #btn-up { top: 0; left: 50px; }
-        #btn-down { bottom: 0; left: 50px; }
-        #btn-left { top: 50px; left: 0; }
-        #btn-right { top: 50px; right: 0; }
-        
-        #btn-jump {
-            width: 80px; height: 80px; border-radius: 50%; bottom: 20px; right: 20px; position: absolute;
-            background: rgba(255,200,0,0.2); border-color: gold; pointer-events: auto;
+        /* HEADS UP DISPLAY */
+        #ui {
+            position: absolute; top: 20px; left: 20px; color: white; font-weight: bold; 
+            text-shadow: 2px 2px 0 #000; pointer-events: none; font-size: 24px;
         }
 
-        /* Camera Touch Zone (Right side of screen) */
-        #cam-zone {
-            position: absolute; top: 0; right: 0; width: 50%; height: 100%;
-            z-index: 40; display: none; pointer-events: auto;
+        /* CROSSHAIR */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            background: transparent; border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
         }
 
-        @media (max-width: 1024px) {
-            #mobile-controls { display: flex; }
-            #cam-zone { display: block; }
-            .inventory-box { margin-bottom: 180px; } 
+        /* INVENTORY */
+        #inventory {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; pointer-events: none;
+        }
+        .slot {
+            width: 50px; height: 50px; background: rgba(0,0,0,0.5); border: 2px solid #555;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            color: gold; font-size: 24px; opacity: 0.3; transition: 0.3s;
+        }
+        .slot.active { opacity: 1; border-color: gold; background: rgba(255, 215, 0, 0.2); box-shadow: 0 0 15px gold; }
+
+        /* MOBILE CONTROLS (Hidden on PC) */
+        #mobile-stick {
+            position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px;
+            background: rgba(255,255,255,0.1); border-radius: 50%; display: none;
+        }
+        #mobile-jump {
+            position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px;
+            background: rgba(255,0,0,0.2); border: 2px solid red; border-radius: 50%; display: none;
+        }
+        @media (max-width: 1000px) {
+            #mobile-stick, #mobile-jump { display: block; }
         }
     </style>
 </head>
 <body>
 
-    <div id="menu-screen">
-        <h1>SKY BOUND v6</h1>
-        <p>New: Move Mouse/Finger to Look Around!</p>
-        <button id="play-btn">PLAY GAME</button>
+    <div id="start-screen">
+        <h1 style="font-size: 50px; margin: 0; color: #4ade80;">CLICK TO START</h1>
+        <p>Mouse to Look • WASD to Move • SPACE to Jump</p>
     </div>
 
-    <div id="hud">
-        <div class="stats">
-            <div>LEVEL: <span id="level-txt" style="color:#60a5fa">1</span></div>
-            <div>DEATHS: <span id="death-txt" style="color:#f87171">0</span></div>
-        </div>
-        <div class="inventory-box">
-            <div id="slot-1" class="item-slot">★</div>
-            <div id="slot-2" class="item-slot">★</div>
-            <div id="slot-3" class="item-slot">★</div>
-        </div>
+    <div id="ui">
+        <div>LEVEL: <span id="level-txt" style="color:#4ade80">1</span></div>
+        <div>DEATHS: <span id="death-txt" style="color:#f87171">0</span></div>
+    </div>
+    <div id="crosshair"></div>
+    <div id="inventory">
+        <div id="slot-1" class="slot">★</div>
+        <div id="slot-2" class="slot">★</div>
+        <div id="slot-3" class="slot">★</div>
     </div>
 
-    <div id="cam-zone"></div>
-    <div id="mobile-controls">
-        <div class="d-pad">
-            <div id="btn-up" class="btn">W</div>
-            <div id="btn-down" class="btn">S</div>
-            <div id="btn-left" class="btn">A</div>
-            <div id="btn-right" class="btn">D</div>
-        </div>
-        <div id="btn-jump" class="btn">JUMP</div>
-    </div>
+    <div id="mobile-stick"></div>
+    <div id="mobile-jump"></div>
 
     <script type="importmap">
         {
@@ -120,178 +87,178 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- 1. SETUP ---
+        // --- 1. SETUP SCENE ---
         const scene = new THREE.Scene();
-        const skyColor = 0x87CEEB; 
-        scene.background = new THREE.Color(skyColor);
-        scene.fog = new THREE.Fog(skyColor, 20, 90);
+        scene.background = new THREE.Color(0x87CEEB); // Sky Blue
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-        scene.add(hemiLight);
-        const dirLight = new THREE.DirectionalLight(0xffdfba, 1.2); 
-        dirLight.position.set(50, 80, 30);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048; scene.add(dirLight);
+        // LIGHTS
+        const amb = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(amb);
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(50, 100, 50);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048; 
+        sun.shadow.mapSize.height = 2048;
+        scene.add(sun);
 
-        // --- 2. PLAYER ---
-        const playerGroup = new THREE.Group();
-        scene.add(playerGroup);
+        // --- 2. THE NEW CHARACTER (Minecraft Style) ---
+        const player = new THREE.Group();
+        scene.add(player);
 
-        const matBody = new THREE.MeshStandardMaterial({ color: 0x3b82f6 }); 
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), matBody);
-        torso.position.y = 1.2; torso.castShadow = true;
-        playerGroup.add(torso);
+        // Materials
+        const matSkin = new THREE.MeshStandardMaterial({ color: 0x3b82f6 }); // Blue Body
+        const matHead = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow Head
+        const matLimb = new THREE.MeshStandardMaterial({ color: 0x1e293b }); // Dark Limbs
 
-        // --- 3. LEVEL ---
-        const worldObjects = [];
-        const interactables = [];
-        const ghosts = [];
-        let spinner = null;
+        // Body Parts
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), matHead);
+        head.position.y = 1.6;
+        head.castShadow = true;
+        player.add(head);
+
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), matSkin);
+        body.position.y = 1.0;
+        body.castShadow = true;
+        player.add(body);
+
+        // Limbs (Pivot points are important for animation)
+        function createLimb(x, y, z) {
+            const group = new THREE.Group();
+            group.position.set(x, y, z);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), matLimb);
+            mesh.position.y = -0.35; // Offset so it rotates from top
+            mesh.castShadow = true;
+            group.add(mesh);
+            player.add(group);
+            return group;
+        }
+
+        const armL = createLimb(-0.45, 1.3, 0);
+        const armR = createLimb( 0.45, 1.3, 0);
+        const legL = createLimb(-0.2, 0.7, 0);
+        const legR = createLimb( 0.2, 0.7, 0);
+
+        // --- 3. WORLD GENERATION ---
+        const colliders = [];
+        const coins = [];
         
-        function createBox(x, y, z, w, h, d, type) {
-            let color = 0x94a3b8; 
-            if(type === 'spawn') color = 0x4ade80; 
-            if(type === 'lava') color = 0xef4444; 
-            if(type === 'win') color = 0xfacc15; 
+        function createBlock(x, y, z, w, h, d, type) {
+            let col = 0xaaaaaa;
+            if(type === 'spawn') col = 0x4ade80;
+            if(type === 'lava') col = 0xff4444;
+            if(type === 'win') col = 0xffd700;
             
-            const geo = new THREE.BoxGeometry(w, h, d);
-            const mat = new THREE.MeshStandardMaterial({ color: color });
-            if(type === 'lava') { mat.emissive = 0x7f1d1d; mat.emissiveIntensity = 0.5; }
-            const mesh = new THREE.Mesh(geo, mat);
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(w, h, d),
+                new THREE.MeshStandardMaterial({ color: col })
+            );
             mesh.position.set(x, y, z);
-            mesh.castShadow = true; mesh.receiveShadow = true;
-            mesh.userData = { type: type, originalY: y };
+            
+            if(type === 'lava') {
+                mesh.material.emissive = 0x990000;
+                mesh.material.emissiveIntensity = 0.5;
+            } else {
+                mesh.receiveShadow = true;
+                colliders.push(mesh); // Add to physics (except lava, lava kills instantly)
+            }
+            
+            mesh.userData = { type: type };
             scene.add(mesh);
-            if(type !== 'coin') worldObjects.push(mesh);
             return mesh;
         }
 
-        function createCoin(x, y, z, id) {
-            const geo = new THREE.OctahedronGeometry(0.3);
-            const mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffa500 });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(x, y, z);
-            mesh.userData = { type: 'coin', id: id };
-            scene.add(mesh);
-            interactables.push(mesh);
-        }
-
-        // Levels
-        createBox(0, 0, 0, 10, 1, 10, 'spawn');
-        createBox(0, 1, 10, 4, 1, 4, 'base');
-        createBox(0, 2, 16, 4, 1, 4, 'base');
-        createCoin(0, 3.5, 16, 1);
+        // --- LEVEL DESIGN ---
+        createBlock(0, 0, 0, 10, 1, 10, 'spawn');
         
-        createBox(0, 3, 26, 3, 1, 8, 'base');
-        createBox(0, 4, 34, 2, 1, 2, 'base');
-        createBox(0, 5, 40, 2, 1, 2, 'base');
+        // Jumps
+        createBlock(0, 1, 10, 4, 1, 4, 'base');
+        createBlock(0, 2, 18, 4, 1, 4, 'base');
+        createBlock(0, 3, 26, 4, 1, 4, 'base');
         
-        createBox(0, 5, 55, 10, 1, 10, 'base');
-        createBox(0, 5.1, 55, 3, 0.2, 8, 'lava');
-        createCoin(0, 6.5, 55, 2);
-        createBox(0, 6, 70, 1, 1, 12, 'base');
-        
-        createBox(0, 6, 85, 4, 1, 4, 'spawn');
-        const g1 = createBox(0, 6.5, 95, 3, 0.5, 3, 'base');
-        const g2 = createBox(0, 7, 103, 3, 0.5, 3, 'base');
-        const g3 = createBox(0, 7.5, 111, 3, 0.5, 3, 'base');
-        ghosts.push(g1, g2, g3);
+        // Lava Trap
+        createBlock(0, 3, 36, 3, 0.5, 10, 'lava'); // Walkable lava (Trap)
+        createBlock(0, 3.5, 36, 1, 0.5, 10, 'base'); // Thin safe path
 
-        createBox(0, 8, 125, 6, 1, 15, 'base');
-        spinner = createBox(0, 9, 125, 14, 0.4, 0.4, 'lava');
-        createBox(0, 9, 145, 10, 1, 10, 'win');
-        createCoin(0, 10.5, 145, 3);
-        createBox(0, -15, 50, 300, 1, 300, 'lava');
+        // Moving Platform (We animate this later)
+        const mover = createBlock(0, 4, 50, 6, 1, 6, 'base');
 
-        // --- 4. CONTROLS (THE NEW CAMERA SYSTEM) ---
-        let velocity = new THREE.Vector3();
+        // Win Area
+        createBlock(0, 6, 70, 10, 1, 10, 'win');
+
+        // Giant Lava Floor
+        createBlock(0, -10, 50, 200, 1, 200, 'lava');
+
+
+        // --- 4. GAME ENGINE (Physics & Camera) ---
+        let velocityY = 0;
+        let onGround = false;
         let spawnPos = new THREE.Vector3(0, 5, 0);
         let deaths = 0;
-        let onGround = false;
-        let isLocked = false;
         
         // Camera Variables
-        let camAngleX = Math.PI; // Horizontal (Rotation)
-        let camAngleY = 0.4;     // Vertical (Pitch)
-        const camDist = 10;
+        let camPitch = 0; // Up/Down
+        let camYaw = Math.PI;   // Left/Right (Start facing player back)
+        const camDist = 8;
         
         const raycaster = new THREE.Raycaster();
-        const menu = document.getElementById('menu-screen');
-        const playBtn = document.getElementById('play-btn');
 
-        // Mouse Lock
-        playBtn.addEventListener('click', () => {
+        // Inputs
+        const keys = { w:0, a:0, s:0, d:0, sp:0 };
+        
+        // MOUSE LOCK & LOOK
+        const startScreen = document.getElementById('start-screen');
+        
+        startScreen.addEventListener('click', () => {
             document.body.requestPointerLock();
         });
+
         document.addEventListener('pointerlockchange', () => {
-            isLocked = (document.pointerLockElement === document.body);
-            menu.style.display = isLocked ? 'none' : 'flex';
-            if(!isLocked) {
+            if(document.pointerLockElement === document.body) {
+                startScreen.style.display = 'none';
+            } else {
+                startScreen.style.display = 'flex';
                 document.querySelector('h1').innerText = "PAUSED";
-                playBtn.innerText = "RESUME";
             }
         });
 
-        // --- MOUSE LOOK ---
         document.addEventListener('mousemove', (e) => {
-            if (isLocked) {
-                camAngleX -= e.movementX * 0.002;
-                camAngleY -= e.movementY * 0.002;
-                // Clamp Look Up/Down
-                camAngleY = Math.max(0.1, Math.min(Math.PI / 2.5, camAngleY));
+            if(document.pointerLockElement === document.body) {
+                // Adjust sensitivity here (0.002 is standard)
+                camYaw -= e.movementX * 0.002;
+                camPitch -= e.movementY * 0.002;
+                
+                // Limit looking up/down
+                camPitch = Math.max(-0.5, Math.min(1.0, camPitch));
             }
         });
 
-        // --- TOUCH LOOK (Mobile) ---
-        let touchStartX = 0;
-        const camZone = document.getElementById('cam-zone');
-        camZone.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
-        camZone.addEventListener('touchmove', (e) => {
-            const deltaX = e.touches[0].clientX - touchStartX;
-            camAngleX -= deltaX * 0.005; // Rotate camera
-            touchStartX = e.touches[0].clientX;
-        });
-
-        // --- MOVEMENT INPUTS ---
-        const keys = { w:0, a:0, s:0, d:0, sp:0 };
+        // KEYBOARD
         document.addEventListener('keydown', e => {
             if(e.code === 'KeyW') keys.w = 1;
-            if(e.code === 'KeyA') keys.a = 1;
             if(e.code === 'KeyS') keys.s = 1;
+            if(e.code === 'KeyA') keys.a = 1;
             if(e.code === 'KeyD') keys.d = 1;
             if(e.code === 'Space') keys.sp = 1;
             if(e.code === 'KeyR') die();
         });
         document.addEventListener('keyup', e => {
             if(e.code === 'KeyW') keys.w = 0;
-            if(e.code === 'KeyA') keys.a = 0;
             if(e.code === 'KeyS') keys.s = 0;
+            if(e.code === 'KeyA') keys.a = 0;
             if(e.code === 'KeyD') keys.d = 0;
             if(e.code === 'Space') keys.sp = 0;
         });
 
-        // Mobile Buttons
-        const bindTouch = (id, key) => {
-            const btn = document.getElementById(id);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = 1; });
-            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = 0; });
-        };
-        bindTouch('btn-up', 'w');
-        bindTouch('btn-down', 's');
-        bindTouch('btn-left', 'a');
-        bindTouch('btn-right', 'd');
-        bindTouch('btn-jump', 'sp');
-
         function die() {
-            playerGroup.position.copy(spawnPos);
-            velocity.set(0,0,0);
+            player.position.copy(spawnPos);
+            velocityY = 0;
             deaths++;
             document.getElementById('death-txt').innerText = deaths;
         }
@@ -304,91 +271,93 @@
             const dt = Math.min(clock.getDelta(), 0.1);
             const time = Date.now() * 0.001;
 
-            // Environment
-            const ghostsVisible = Math.sin(time * 2) > 0;
-            ghosts.forEach(g => {
-                g.visible = ghostsVisible;
-                g.position.y = ghostsVisible ? g.userData.originalY : -999;
-            });
-            if(spinner) spinner.rotation.y -= 2.5 * dt;
-            interactables.forEach(c => { if(c.visible) { c.rotation.y += 3 * dt; c.position.y += Math.sin(time*3)*0.005; } });
+            // Animate Level
+            mover.position.x = Math.sin(time) * 5; // Platform moves left/right
 
-            if(isLocked || window.innerWidth <= 1024) {
-                // Physics
-                velocity.y -= 40 * dt;
+            // 1. PHYSICS (Gravity)
+            velocityY -= 40 * dt;
+            
+            // 2. MOVEMENT (Camera Relative)
+            const speed = 12;
+            let isMoving = false;
 
-                // 1. CALCULATE DIRECTION BASED ON CAMERA ANGLE
-                const moveSpeed = 15;
-                // Forward vector based on Camera Y Rotation
-                const forward = new THREE.Vector3(Math.sin(camAngleX), 0, Math.cos(camAngleX)).normalize();
-                const right = new THREE.Vector3(Math.sin(camAngleX - Math.PI/2), 0, Math.cos(camAngleX - Math.PI/2)).normalize();
+            // Calculate "Forward" based purely on Camera Angle (camYaw)
+            const forwardX = Math.sin(camYaw);
+            const forwardZ = Math.cos(camYaw);
+            const rightX = Math.sin(camYaw - Math.PI/2);
+            const rightZ = Math.cos(camYaw - Math.PI/2);
 
-                const moveDir = new THREE.Vector3();
-                if(keys.w) moveDir.sub(forward); // W moves "Forward" relative to camera
-                if(keys.s) moveDir.add(forward);
-                if(keys.a) moveDir.sub(right);
-                if(keys.d) moveDir.add(right);
+            const moveX = (keys.w * -forwardX) + (keys.s * forwardX) + (keys.a * -rightX) + (keys.d * rightX);
+            const moveZ = (keys.w * -forwardZ) + (keys.s * forwardZ) + (keys.a * -rightZ) + (keys.d * rightZ);
 
-                if(moveDir.length() > 0) moveDir.normalize();
-
-                playerGroup.position.x += moveDir.x * moveSpeed * dt;
-                playerGroup.position.z += moveDir.z * moveSpeed * dt;
+            if (moveX !== 0 || moveZ !== 0) {
+                isMoving = true;
+                player.position.x += moveX * speed * dt;
+                player.position.z += moveZ * speed * dt;
                 
-                // Rotate Character to face movement
-                if(moveDir.length() > 0.1) {
-                    const targetRot = Math.atan2(moveDir.x, moveDir.z);
-                    let rotDiff = targetRot - playerGroup.rotation.y;
-                    while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
-                    while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
-                    playerGroup.rotation.y += rotDiff * 15 * dt;
-                }
-
-                // Raycast
-                const rayOrigin = playerGroup.position.clone(); rayOrigin.y += 1.0;
-                raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
-                const hits = raycaster.intersectObjects(worldObjects);
-                onGround = false;
-                if(hits.length > 0) {
-                    const hit = hits[0];
-                    if(hit.distance < 1.1 && velocity.y <= 0) {
-                        onGround = true; velocity.y = 0; playerGroup.position.y = hit.point.y;
-                        if(hit.object.userData.type === 'lava') die();
-                        if(hit.object.userData.type === 'spawn' && hit.object.position.z > spawnPos.z + 5) {
-                            spawnPos.copy(hit.object.position).add(new THREE.Vector3(0,5,0));
-                            document.getElementById('level-txt').innerText = Math.floor(hit.object.position.z/30)+1;
-                        }
-                    }
-                }
-                interactables.forEach(c => {
-                    if(c.visible && playerGroup.position.distanceTo(c.position) < 1.5) {
-                        c.visible = false; document.getElementById('slot-'+c.userData.id).classList.add('active');
-                    }
-                });
-
-                if(onGround && keys.sp) { velocity.y = 16; onGround = false; }
-                playerGroup.position.y += velocity.y * dt;
-                if(playerGroup.position.y < -20) die();
-
-                // 2. ORBIT CAMERA LOGIC
-                // Calculate camera position based on Angle and Distance from Player
-                const camX = playerGroup.position.x + camDist * Math.sin(camAngleX) * Math.cos(camAngleY);
-                const camY = playerGroup.position.y + camDist * Math.sin(camAngleY);
-                const camZ = playerGroup.position.z + camDist * Math.cos(camAngleX) * Math.cos(camAngleY);
-
-                // Smoothly move camera there
-                camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.2);
-                camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
+                // Rotate character to face movement direction
+                player.rotation.y = Math.atan2(moveX, moveZ);
             }
+
+            // 3. COLLISION (Raycasting)
+            raycaster.set(player.position.clone().add(new THREE.Vector3(0, 1, 0)), new THREE.Vector3(0, -1, 0));
+            const hits = raycaster.intersectObjects(colliders);
+            
+            onGround = false;
+            if (hits.length > 0) {
+                const hit = hits[0];
+                if (hit.distance < 1.1 && velocityY <= 0) {
+                    onGround = true;
+                    velocityY = 0;
+                    player.position.y = hit.point.y;
+                    
+                    if (hit.object.userData.type === 'win') {
+                        document.getElementById('level-txt').innerText = "WINNER!";
+                    }
+                }
+            }
+
+            // Check Lava (Separate check because lava is not a collider)
+            if(player.position.y < -5) die(); 
+            
+            // Jump
+            if (onGround && keys.sp) {
+                velocityY = 15;
+                onGround = false;
+            }
+            player.position.y += velocityY * dt;
+
+            // 4. CHARACTER ANIMATION (Walking)
+            if(isMoving && onGround) {
+                const walkSpeed = 10;
+                armL.rotation.x = Math.sin(time * walkSpeed) * 0.5;
+                armR.rotation.x = Math.cos(time * walkSpeed) * 0.5;
+                legL.rotation.x = Math.cos(time * walkSpeed) * 0.5;
+                legR.rotation.x = Math.sin(time * walkSpeed) * 0.5;
+            } else {
+                // Reset Pose
+                armL.rotation.x = armR.rotation.x = legL.rotation.x = legR.rotation.x = 0;
+            }
+
+            // 5. CAMERA UPDATE
+            // Simple Spherical Coordinates
+            const camX = player.position.x + camDist * Math.sin(camYaw) * Math.cos(camPitch);
+            const camY = player.position.y + camDist * Math.sin(camPitch) + 2; // +2 looks slightly down
+            const camZ = player.position.z + camDist * Math.cos(camYaw) * Math.cos(camPitch);
+
+            camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.2);
+            camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 1.5, 0))); // Look at head
 
             renderer.render(scene, camera);
         }
         animate();
 
-        window.onresize = () => {
+        // Resize
+        window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        };
+        });
     </script>
 </body>
 </html>
