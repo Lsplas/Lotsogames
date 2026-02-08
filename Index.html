@@ -2,48 +2,109 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ultimate Obby v4.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ultimate Obby: Mobile Edition</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; user-select: none; }
-        #ui-layer {
+        /* --- UI STYLES --- */
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; user-select: none; -webkit-user-select: none; }
+        
+        #hud {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
+            pointer-events: none; padding: 20px; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between; z-index: 5;
         }
-        .hud-item {
-            color: white; text-shadow: 2px 2px 0 #000; font-weight: bold; font-size: 24px; margin-bottom: 10px;
+        .stats { font-size: 20px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000; }
+        
+        /* INVENTORY */
+        .inventory-box {
+            display: flex; gap: 10px; align-self: center; margin-bottom: 20px; pointer-events: auto;
         }
-        #center-crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            background: white; border-radius: 50%; transform: translate(-50%, -50%);
-            border: 2px solid black; opacity: 0.8;
+        .item-slot {
+            width: 40px; height: 40px; background: rgba(0,0,0,0.5); border: 2px solid white;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: gold; opacity: 0.3; transition: opacity 0.3s;
         }
-        #title-screen {
+        .item-slot.active { opacity: 1; background: rgba(255, 215, 0, 0.3); border-color: gold; box-shadow: 0 0 10px gold; }
+
+        /* PAUSE MENU */
+        #menu-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; color: white; pointer-events: auto; z-index: 999;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; color: white; transition: opacity 0.2s;
         }
-        h1 { font-size: 60px; margin: 0; color: #00d26a; text-shadow: 0 0 20px #00d26a; }
-        p { font-size: 20px; color: #ccc; margin-bottom: 30px; }
-        button {
-            padding: 15px 50px; font-size: 24px; background: white; border: none;
-            color: #333; cursor: pointer; border-radius: 50px; font-weight: bold;
-            transition: all 0.2s;
+        h1 { font-size: 50px; margin: 0; color: #60a5fa; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px #60a5fa; text-align: center; }
+        p { color: #cbd5e1; font-size: 16px; margin-bottom: 20px; text-align: center; max-width: 80%; }
+        button#play-btn {
+            padding: 15px 50px; font-size: 22px; font-weight: bold; border-radius: 50px; border: none;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6); color: white; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
-        button:hover { transform: scale(1.1); box-shadow: 0 0 20px white; }
+
+        /* --- MOBILE CONTROLS --- */
+        #mobile-controls {
+            position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px;
+            pointer-events: none; display: none; /* Hidden on PC by default */
+            justify-content: space-between; z-index: 50;
+        }
+        .d-pad {
+            position: relative; width: 150px; height: 150px; pointer-events: auto;
+        }
+        .btn {
+            position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 10px; backdrop-filter: blur(2px);
+            display: flex; justify-content: center; align-items: center; color: white; font-weight: bold;
+            touch-action: none; -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active { background: rgba(255,255,255,0.5); }
+        
+        /* D-PAD Positioning */
+        #btn-up { top: 0; left: 50px; }
+        #btn-down { bottom: 0; left: 50px; }
+        #btn-left { top: 50px; left: 0; }
+        #btn-right { top: 50px; right: 0; }
+        
+        /* JUMP BUTTON */
+        #btn-jump {
+            width: 80px; height: 80px; border-radius: 50%; bottom: 20px; right: 20px; position: absolute;
+            background: rgba(255,200,0,0.2); border-color: gold; pointer-events: auto;
+        }
+
+        /* Show mobile controls on small screens */
+        @media (max-width: 1024px) {
+            #mobile-controls { display: flex; }
+            .inventory-box { margin-bottom: 180px; } /* Move inventory up so thumb doesn't cover it */
+        }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <div class="hud-item">LEVEL: <span id="level-txt" style="color:#00d26a">1</span></div>
-        <div class="hud-item">DEATHS: <span id="death-txt" style="color:#ff4444">0</span></div>
+    <div id="menu-screen">
+        <h1>SKY BOUND v5</h1>
+        <p>Morning Edition • Ghosts & Spinners • Mobile Ready</p>
+        <button id="play-btn">PLAY GAME</button>
     </div>
-    <div id="center-crosshair"></div>
 
-    <div id="title-screen">
-        <h1>MASTER OBBY</h1>
-        <p>WASD to Move • SPACE to Jump • CLICK to Start</p>
-        <button id="start-btn">PLAY NOW</button>
+    <div id="hud">
+        <div class="stats">
+            <div>LEVEL: <span id="level-txt" style="color:#60a5fa">1</span></div>
+            <div>DEATHS: <span id="death-txt" style="color:#f87171">0</span></div>
+        </div>
+        <div class="inventory-box">
+            <div id="slot-1" class="item-slot">★</div>
+            <div id="slot-2" class="item-slot">★</div>
+            <div id="slot-3" class="item-slot">★</div>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="d-pad">
+            <div id="btn-up" class="btn">W</div>
+            <div id="btn-down" class="btn">S</div>
+            <div id="btn-left" class="btn">A</div>
+            <div id="btn-right" class="btn">D</div>
+        </div>
+        <div id="btn-jump" class="btn">JUMP</div>
     </div>
 
     <script type="importmap">
@@ -59,334 +120,297 @@
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-        // --- 1. AUDIO ENGINE (Synthesized Sounds) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'jump') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'die') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-            } else if (type === 'check') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-                
-                setTimeout(() => {
-                    const osc2 = audioCtx.createOscillator();
-                    const gain2 = audioCtx.createGain();
-                    osc2.connect(gain2);
-                    gain2.connect(audioCtx.destination);
-                    osc2.frequency.setValueAtTime(900, audioCtx.currentTime);
-                    gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                    osc2.start(); osc2.stop(audioCtx.currentTime + 0.2);
-                }, 100);
-            }
-        }
-
-        // --- 2. PARTICLE SYSTEM ---
-        const particles = [];
-        function createExplosion(x, y, z, color) {
-            for(let i=0; i<20; i++) {
-                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-                const mat = new THREE.MeshBasicMaterial({ color: color });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(x, y, z);
-                
-                // Random velocity
-                const vel = new THREE.Vector3(
-                    (Math.random()-0.5)*10, 
-                    (Math.random())*10, 
-                    (Math.random()-0.5)*10
-                );
-                
-                scene.add(mesh);
-                particles.push({ mesh, vel, life: 1.0 });
-            }
-        }
-
-        // --- 3. SCENE & TEXTURES ---
-        function createGridTexture(c1, c2) {
-            const cvs = document.createElement('canvas'); cvs.width = 64; cvs.height = 64;
-            const ctx = cvs.getContext('2d');
-            ctx.fillStyle = c1; ctx.fillRect(0,0,64,64);
-            ctx.fillStyle = c2; ctx.fillRect(0,0,32,32); ctx.fillRect(32,32,32,32);
-            const tex = new THREE.CanvasTexture(cvs);
-            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-            tex.magFilter = THREE.NearestFilter;
-            return tex;
-        }
-
+        // --- 1. SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
+        const skyColor = 0x87CEEB; // Morning Blue
+        scene.background = new THREE.Color(skyColor);
+        scene.fog = new THREE.Fog(skyColor, 20, 90);
 
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Soft white light
-        scene.add(ambientLight);
-        
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2); // Sun
-        dirLight.position.set(20, 50, 30);
+        // LIGHTS
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xffdfba, 1.2); 
+        dirLight.position.set(50, 80, 30);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // --- 4. PLAYER ---
+        // --- 2. PLAYER ---
         const playerGroup = new THREE.Group();
         scene.add(playerGroup);
 
-        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
-        const torsoMat = new THREE.MeshStandardMaterial({ color: 0x0088ff });
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
+        const matBody = new THREE.MeshStandardMaterial({ color: 0x3b82f6 }); 
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), matBody);
+        torso.position.y = 1.2;
+        torso.castShadow = true;
+        playerGroup.add(torso);
 
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), skinMat); head.position.y = 1.75;
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), torsoMat); torso.position.y = 1.1;
-        const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), legMat); lLeg.position.set(-0.2, 0.4, 0);
-        const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), legMat); rLeg.position.set(0.2, 0.4, 0);
-        const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.8, 0.25), skinMat); lArm.position.set(-0.55, 1.1, 0);
-        const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.8, 0.25), skinMat); rArm.position.set(0.55, 1.1, 0);
+        // --- 3. WORLD BUILDER ---
+        const worldObjects = [];
+        const interactables = [];
+        const ghosts = [];
+        let spinner = null;
+        
+        function createBox(x, y, z, w, h, d, type) {
+            let color = 0x94a3b8; 
+            if(type === 'spawn') color = 0x4ade80; 
+            if(type === 'lava') color = 0xef4444; 
+            if(type === 'win') color = 0xfacc15; 
+            
+            const geo = new THREE.BoxGeometry(w, h, d);
+            const mat = new THREE.MeshStandardMaterial({ color: color });
+            
+            if(type === 'lava') { mat.emissive = 0x7f1d1d; mat.emissiveIntensity = 0.5; }
 
-        [head, torso, lLeg, rLeg, lArm, rArm].forEach(m => { m.castShadow = true; playerGroup.add(m); });
-
-        // --- 5. WORLD ---
-        const platforms = [];
-        const movingObjects = [];
-        const texSpawn = createGridTexture('#888', '#999');
-        const texLava = createGridTexture('#ff0000', '#aa0000');
-        const texCheck = createGridTexture('#ffff00', '#ddaa00');
-
-        function createPart(w, h, d, x, y, z, type, moveData = null) {
-            let mat = new THREE.MeshStandardMaterial({ map: texSpawn });
-            if(type === 'lava') mat = new THREE.MeshStandardMaterial({ map: texLava, emissive: 0x550000 });
-            if(type === 'check') mat = new THREE.MeshStandardMaterial({ map: texCheck });
-
-            mat.map.repeat.set(w/2, d/2);
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+            const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(x, y, z);
-            mesh.receiveShadow = true;
             mesh.castShadow = true;
-            mesh.userData = { type, move: moveData };
+            mesh.receiveShadow = true;
+            mesh.userData = { type: type, originalY: y };
+            
             scene.add(mesh);
-            platforms.push(mesh);
-            if(moveData) movingObjects.push(mesh);
+            if(type !== 'coin') worldObjects.push(mesh);
+            return mesh;
         }
 
-        // LEVEL 1
-        createPart(10, 1, 10, 0, 0, 0, 'spawn');
-        createPart(3, 1, 3, 0, 1, 10, 'base');
-        createPart(3, 1, 3, 0, 2, 17, 'base');
-        createPart(3, 1, 3, 0, 3, 24, 'base');
-        createPart(8, 1, 8, 0, 4, 32, 'check'); // Checkpoint 1
+        function createCoin(x, y, z, id) {
+            const geo = new THREE.OctahedronGeometry(0.3);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffa500 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.userData = { type: 'coin', id: id };
+            scene.add(mesh);
+            interactables.push(mesh);
+        }
 
-        // LEVEL 2 (Moving)
-        createPart(4, 0.5, 4, 0, 4, 42, 'base', { type: 'slide', axis: 'x', range: 5, speed: 2 });
-        createPart(4, 0.5, 4, 0, 5, 52, 'base', { type: 'slide', axis: 'x', range: 5, speed: -2 });
-        createPart(8, 1, 8, 0, 6, 62, 'check'); // Checkpoint 2
-
-        // LEVEL 3 (Spinning Beams)
-        createPart(2, 1, 25, 0, 6, 80, 'base');
-        createPart(10, 1, 1, 0, 7.5, 80, 'lava', { type: 'spin', speed: 2 }); // Spinner
-        createPart(10, 1, 1, 0, 7.5, 90, 'lava', { type: 'spin', speed: -3 }); // Spinner
+        // --- LEVELS ---
+        // Lvl 1
+        createBox(0, 0, 0, 10, 1, 10, 'spawn');
+        createBox(0, 1, 10, 4, 1, 4, 'base');
+        createBox(0, 2, 16, 4, 1, 4, 'base');
+        createCoin(0, 3.5, 16, 1);
         
-        createPart(15, 1, 15, 0, 6, 110, 'check'); // WIN
+        // Lvl 2
+        createBox(0, 3, 26, 3, 1, 8, 'base');
+        createBox(0, 4, 34, 2, 1, 2, 'base');
+        createBox(0, 5, 40, 2, 1, 2, 'base');
+        
+        // Lvl 3 (Lava)
+        createBox(0, 5, 55, 10, 1, 10, 'base');
+        createBox(0, 5.1, 55, 3, 0.2, 8, 'lava');
+        createCoin(0, 6.5, 55, 2);
+        createBox(0, 6, 70, 1, 1, 12, 'base');
+        
+        // Lvl 4 (Ghosts) - NEW
+        createBox(0, 6, 85, 4, 1, 4, 'spawn'); // Checkpoint
+        const g1 = createBox(0, 6.5, 95, 3, 0.5, 3, 'base');
+        const g2 = createBox(0, 7, 103, 3, 0.5, 3, 'base');
+        const g3 = createBox(0, 7.5, 111, 3, 0.5, 3, 'base');
+        ghosts.push(g1, g2, g3);
+
+        // Lvl 5 (Spinner) - NEW
+        createBox(0, 8, 125, 6, 1, 15, 'base');
+        spinner = createBox(0, 9, 125, 14, 0.4, 0.4, 'lava'); // Spinning Beam
+        
+        // Win
+        createBox(0, 9, 145, 10, 1, 10, 'win');
+        createCoin(0, 10.5, 145, 3);
 
         // Floor Lava
-        createPart(300, 1, 300, 0, -10, 50, 'lava');
+        createBox(0, -15, 50, 300, 1, 300, 'lava');
 
-        // --- 6. GAME LOGIC ---
+        // --- 4. GAME LOGIC ---
         let velocity = new THREE.Vector3();
         let spawnPos = new THREE.Vector3(0, 5, 0);
         let deaths = 0;
-        let canJump = false;
+        let onGround = false;
         
         const controls = new PointerLockControls(camera, document.body);
-        document.getElementById('start-btn').onclick = () => {
-            controls.lock(); 
-            document.getElementById('title-screen').style.display = 'none';
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        };
+        const raycaster = new THREE.Raycaster();
+        const menu = document.getElementById('menu-screen');
+        const playBtn = document.getElementById('play-btn');
 
-        const keys = { w:0, a:0, s:0, d:0 };
-        document.addEventListener('keydown', (e) => {
+        // Input State
+        const keys = { w:0, a:0, s:0, d:0, sp:0 };
+
+        // Desktop Controls
+        playBtn.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => menu.style.display = 'none');
+        controls.addEventListener('unlock', () => {
+            menu.style.display = 'flex';
+            document.querySelector('h1').innerText = "PAUSED";
+            playBtn.innerText = "RESUME";
+        });
+
+        document.addEventListener('keydown', e => {
             if(e.code === 'KeyW') keys.w = 1;
-            if(e.code === 'KeyS') keys.s = 1;
             if(e.code === 'KeyA') keys.a = 1;
+            if(e.code === 'KeyS') keys.s = 1;
             if(e.code === 'KeyD') keys.d = 1;
-            if(e.code === 'Space' && canJump) { 
-                velocity.y = 16; 
-                canJump = false; 
-                playSound('jump');
-            }
+            if(e.code === 'Space') keys.sp = 1;
             if(e.code === 'KeyR') die();
         });
-        document.addEventListener('keyup', (e) => {
+        document.addEventListener('keyup', e => {
             if(e.code === 'KeyW') keys.w = 0;
-            if(e.code === 'KeyS') keys.s = 0;
             if(e.code === 'KeyA') keys.a = 0;
+            if(e.code === 'KeyS') keys.s = 0;
             if(e.code === 'KeyD') keys.d = 0;
+            if(e.code === 'Space') keys.sp = 0;
         });
 
+        // Mobile Controls
+        const bindTouch = (id, key) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = 1; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = 0; });
+        };
+        bindTouch('btn-up', 'w');
+        bindTouch('btn-down', 's');
+        bindTouch('btn-left', 'a');
+        bindTouch('btn-right', 'd');
+        bindTouch('btn-jump', 'sp');
+
         function die() {
-            playSound('die');
-            createExplosion(playerGroup.position.x, playerGroup.position.y, playerGroup.position.z, 0xffff00);
-            playerGroup.visible = false;
-            setTimeout(() => {
-                playerGroup.position.copy(spawnPos);
-                velocity.set(0,0,0);
-                playerGroup.visible = true;
-                deaths++;
-                document.getElementById('death-txt').innerText = deaths;
-            }, 1000);
+            playerGroup.position.copy(spawnPos);
+            velocity.set(0,0,0);
+            deaths++;
+            document.getElementById('death-txt').innerText = deaths;
         }
 
+        // --- 5. ANIMATION LOOP ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            const delta = Math.min(clock.getDelta(), 0.1);
+            const dt = Math.min(clock.getDelta(), 0.1);
             const time = Date.now() * 0.001;
 
-            // Update Moving Objects
-            movingObjects.forEach(obj => {
-                const m = obj.userData.move;
-                if(m.type === 'slide') {
-                    if(m.axis === 'x') obj.position.x = Math.sin(time * m.speed) * m.range;
-                } else if (m.type === 'spin') {
-                    obj.rotation.y += m.speed * delta;
+            // 1. GHOST PLATFORMS (Level 4)
+            // Blink every 2 seconds
+            const ghostsVisible = Math.sin(time * 2) > 0;
+            ghosts.forEach(g => {
+                g.visible = ghostsVisible;
+                // Move physical box away if invisible so raycast fails
+                g.position.y = ghostsVisible ? g.userData.originalY : -999;
+            });
+
+            // 2. SPINNER (Level 5)
+            if(spinner) {
+                spinner.rotation.y -= 2.5 * dt; // Rotate
+            }
+
+            // 3. COINS
+            interactables.forEach(coin => {
+                if(coin.visible) {
+                    coin.rotation.y += 3 * dt;
+                    coin.position.y += Math.sin(time * 3) * 0.005;
                 }
             });
 
-            // Update Particles
-            for(let i = particles.length-1; i>=0; i--) {
-                const p = particles[i];
-                p.mesh.position.add(p.vel.clone().multiplyScalar(delta));
-                p.vel.y -= 20 * delta; // Gravity
-                p.life -= delta;
-                p.mesh.scale.setScalar(p.life);
-                if(p.life <= 0) {
-                    scene.remove(p.mesh);
-                    particles.splice(i, 1);
-                }
-            }
+            // 4. PLAYER MOVEMENT
+            if(controls.isLocked || window.innerWidth <= 1024) { // Active if locked OR on mobile
+                // Gravity
+                velocity.y -= 40 * dt;
 
-            if (controls.isLocked && playerGroup.visible) {
-                // Physics
-                velocity.y -= 40 * delta; // Gravity
-                
-                // Movement
-                const speed = 200 * delta;
-                const dir = new THREE.Vector3();
+                // Move Direction
+                const speed = 15;
                 const camDir = new THREE.Vector3();
+                const camSide = new THREE.Vector3();
+                
                 camera.getWorldDirection(camDir);
                 camDir.y = 0; camDir.normalize();
-                
-                const camSide = new THREE.Vector3().crossVectors(camera.up, camDir).normalize();
-                
-                if (keys.w) dir.add(camDir);
-                if (keys.s) dir.sub(camDir);
-                if (keys.a) dir.add(camSide);
-                if (keys.d) dir.sub(camSide);
-                
-                if (dir.lengthSq() > 0) dir.normalize();
-                
-                velocity.x -= velocity.x * 10 * delta; // Friction
-                velocity.z -= velocity.z * 10 * delta;
-                
-                velocity.x += dir.x * speed;
-                velocity.z += dir.z * speed;
+                camSide.crossVectors(camera.up, camDir).normalize();
 
-                playerGroup.position.x += velocity.x * delta;
-                playerGroup.position.z += velocity.z * delta;
-                playerGroup.position.y += velocity.y * delta;
+                const moveDir = new THREE.Vector3();
+                if(keys.w) moveDir.add(camDir);
+                if(keys.s) moveDir.sub(camDir);
+                if(keys.a) moveDir.add(camSide);
+                if(keys.d) moveDir.sub(camSide);
 
-                // Collision
-                const playerBox = new THREE.Box3().setFromObject(torso);
-                let onGround = false;
+                if(moveDir.length() > 0) moveDir.normalize();
 
-                platforms.forEach(p => {
-                    const pBox = new THREE.Box3().setFromObject(p);
-                    if (playerBox.intersectsBox(pBox)) {
-                        // Check if hitting lava
-                        if (p.userData.type === 'lava') {
-                             die();
-                        } 
-                        // Land on top
-                        else if (velocity.y < 0 && playerGroup.position.y > pBox.max.y - 0.5) {
-                            playerGroup.position.y = pBox.max.y;
-                            velocity.y = 0;
-                            onGround = true;
-                            canJump = true;
-                            
-                            // Checkpoint Logic
-                            if (p.userData.type === 'check') {
-                                if (p.position.z > spawnPos.z + 1) { // New checkpoint
-                                    spawnPos.copy(p.position).add(new THREE.Vector3(0,5,0));
-                                    playSound('check');
-                                    document.getElementById('level-txt').innerText = Math.floor(p.position.z/30)+1;
-                                }
-                            }
-                            
-                            // Sticky Moving Platforms
-                            if (p.userData.move && p.userData.move.type === 'slide') {
-                                const m = p.userData.move;
-                                const moveDelta = (Math.sin(time * m.speed) - Math.sin((time-delta) * m.speed)) * m.range;
-                                playerGroup.position.x += moveDelta;
-                            }
+                playerGroup.position.x += moveDir.x * speed * dt;
+                playerGroup.position.z += moveDir.z * speed * dt;
+                
+                // Character Facing
+                if(moveDir.length() > 0.1) {
+                    const targetRot = Math.atan2(moveDir.x, moveDir.z);
+                    let rotDiff = targetRot - playerGroup.rotation.y;
+                    while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+                    while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+                    playerGroup.rotation.y += rotDiff * 10 * dt;
+                }
+
+                // Raycast Ground Check
+                const rayOrigin = playerGroup.position.clone();
+                rayOrigin.y += 1.0;
+                raycaster.set(rayOrigin, new THREE.Vector3(0, -1, 0));
+                
+                const hits = raycaster.intersectObjects(worldObjects);
+                onGround = false;
+
+                if(hits.length > 0) {
+                    const hit = hits[0];
+                    if(hit.distance < 1.1 && velocity.y <= 0) {
+                        onGround = true;
+                        velocity.y = 0;
+                        playerGroup.position.y = hit.point.y; 
+                        
+                        // Interaction
+                        const type = hit.object.userData.type;
+                        if(type === 'lava') die();
+                        if(type === 'spawn' && hit.object.position.z > spawnPos.z + 5) {
+                            spawnPos.copy(hit.object.position).add(new THREE.Vector3(0,5,0));
+                            document.getElementById('level-txt').innerText = Math.floor(hit.object.position.z/30)+1;
                         }
+                        if(type === 'win') document.getElementById('level-txt').innerText = "WINNER!";
+                    }
+                }
+
+                // Check Coin Collisions
+                const pBox = new THREE.Box3().setFromObject(torso);
+                interactables.forEach(coin => {
+                    if(coin.visible && pBox.intersectsBox(new THREE.Box3().setFromObject(coin))) {
+                        coin.visible = false;
+                        document.getElementById('slot-'+coin.userData.id).classList.add('active');
                     }
                 });
 
-                if (playerGroup.position.y < -15) die();
-
-                // Animation
-                if (dir.lengthSq() > 0.1) {
-                    playerGroup.rotation.y = Math.atan2(dir.x, dir.z); // Face movement
-                    lLeg.rotation.x = Math.sin(time * 15) * 0.8;
-                    rLeg.rotation.x = Math.sin(time * 15 + Math.PI) * 0.8;
-                } else {
-                    lLeg.rotation.x = 0; rLeg.rotation.x = 0;
+                // Jump
+                if(onGround && keys.sp) {
+                    velocity.y = 16;
+                    onGround = false;
                 }
 
-                // Camera
-                const idealOff = new THREE.Vector3(0, 4, 8);
-                idealOff.applyQuaternion(playerGroup.quaternion);
-                // Simple follow
-                camera.position.lerp(playerGroup.position.clone().add(new THREE.Vector3(0, 4, 8)), 0.1);
-                camera.lookAt(playerGroup.position);
+                playerGroup.position.y += velocity.y * dt;
+                if(playerGroup.position.y < -20) die();
+
+                // Camera Follow
+                const camDist = 12;
+                const camHeight = 6;
+                const targetPos = playerGroup.position.clone().add(new THREE.Vector3(0, camHeight, camDist));
+                camera.position.lerp(targetPos, 0.1);
+                camera.lookAt(playerGroup.position.clone().add(new THREE.Vector3(0, 2, 0)));
             }
 
             renderer.render(scene, camera);
         }
         animate();
 
-        window.onresize = () => {
+        // Resize
+        window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        };
+        });
     </script>
 </body>
 </html>
