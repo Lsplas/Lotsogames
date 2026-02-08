@@ -1,0 +1,352 @@
+from ursina import *
+from ursina.prefabs.first_person_controller import FirstPersonController
+from ursina.prefabs.health_bar import HealthBar
+import random
+import math
+
+app = Ursina()
+
+# --- Graphics & Window Settings ---
+window.title = 'Minecraft Titan Edition - High Fidelity'
+window.borderless = False
+window.exit_button.visible = False
+window.fps_counter.enabled = False
+
+# Improved Lighting/Fog
+scene.fog_color = color.rgb(180, 210, 255)
+scene.fog_density = 0.015
+Sky(texture='sky_default', color=color.rgb(180, 210, 255))
+
+# --- ASSET DATABASE (The "Every Item" List) ---
+# Format: ID: {Name, Color, Type, Model(optional), Damage(optional)}
+items = {
+    # Page 1: Natural & Building
+    1: {'name': 'Grass Block', 'color': color.rgb(85, 150, 60), 'type': 'block'},
+    2: {'name': 'Dirt', 'color': color.rgb(100, 70, 40), 'type': 'block'},
+    3: {'name': 'Stone', 'color': color.rgb(130, 130, 130), 'type': 'block'},
+    4: {'name': 'Cobblestone', 'color': color.rgb(100, 100, 100), 'type': 'block'},
+    5: {'name': 'Deepslate', 'color': color.rgb(50, 50, 55), 'type': 'block'},
+    6: {'name': 'Bedrock', 'color': color.rgb(20, 20, 20), 'type': 'block'},
+    7: {'name': 'Sand', 'color': color.rgb(230, 220, 160), 'type': 'block'},
+    8: {'name': 'Gravel', 'color': color.rgb(140, 135, 130), 'type': 'block'},
+    9: {'name': 'Oak Log', 'color': color.rgb(110, 75, 40), 'type': 'block'},
+    10: {'name': 'Oak Planks', 'color': color.rgb(170, 130, 70), 'type': 'block'},
+    11: {'name': 'Oak Leaves', 'color': color.rgb(50, 120, 40), 'type': 'block'},
+    12: {'name': 'Glass', 'color': color.rgba(200, 255, 255, 150), 'type': 'block'},
+    13: {'name': 'Obsidian', 'color': color.rgb(20, 10, 30), 'type': 'block'},
+    14: {'name': 'Netherrack', 'color': color.rgb(100, 40, 40), 'type': 'block'},
+    15: {'name': 'End Stone', 'color': color.rgb(240, 240, 190), 'type': 'block'},
+    
+    # Page 2: Ores & Valuables
+    20: {'name': 'Coal Ore', 'color': color.rgb(30, 30, 30), 'type': 'block'},
+    21: {'name': 'Iron Ore', 'color': color.rgb(180, 160, 140), 'type': 'block'},
+    22: {'name': 'Gold Ore', 'color': color.gold, 'type': 'block'},
+    23: {'name': 'Diamond Ore', 'color': color.cyan, 'type': 'block'},
+    24: {'name': 'Emerald Ore', 'color': color.lime, 'type': 'block'},
+    25: {'name': 'Lapis Ore', 'color': color.blue, 'type': 'block'},
+    26: {'name': 'Redstone Ore', 'color': color.red, 'type': 'block'},
+    27: {'name': 'Copper Ore', 'color': color.orange, 'type': 'block'},
+    28: {'name': 'Amethyst', 'color': color.rgb(150, 100, 200), 'type': 'block'},
+    29: {'name': 'Iron Block', 'color': color.white, 'type': 'block'},
+    30: {'name': 'Diamond Block', 'color': color.cyan, 'type': 'block'},
+
+    # Page 3: Tools & Combat
+    100: {'name': 'Diamond Sword', 'color': color.cyan, 'type': 'weapon', 'dmg': 10},
+    101: {'name': 'Iron Sword', 'color': color.white, 'type': 'weapon', 'dmg': 7},
+    102: {'name': 'Stone Sword', 'color': color.gray, 'type': 'weapon', 'dmg': 5},
+    103: {'name': 'Diamond Pickaxe', 'color': color.cyan, 'type': 'tool', 'dmg': 4},
+    104: {'name': 'Iron Pickaxe', 'color': color.white, 'type': 'tool', 'dmg': 3},
+    105: {'name': 'Golden Apple', 'color': color.gold, 'type': 'food', 'heal': 20},
+    106: {'name': 'TNT', 'color': color.red, 'type': 'block'}, # Visual only
+
+    # Page 4: Decoration (Stairs/Doors)
+    200: {'name': 'Oak Stair', 'color': color.rgb(170, 130, 70), 'type': 'stair'},
+    201: {'name': 'Stone Stair', 'color': color.rgb(100, 100, 100), 'type': 'stair'},
+    202: {'name': 'Oak Door', 'color': color.rgb(110, 75, 40), 'type': 'door'},
+    203: {'name': 'Iron Door', 'color': color.light_gray, 'type': 'door'},
+    204: {'name': 'Trapdoor', 'color': color.rgb(90, 60, 30), 'type': 'trapdoor'},
+    
+    # Page 5: Spawn Eggs
+    300: {'name': 'Zombie Egg', 'color': color.green, 'type': 'egg', 'mob': 'zombie'},
+    301: {'name': 'Creeper Egg', 'color': color.lime, 'type': 'egg', 'mob': 'creeper'},
+    302: {'name': 'Skeleton Egg', 'color': color.light_gray, 'type': 'egg', 'mob': 'skeleton'},
+    303: {'name': 'Enderman Egg', 'color': color.black, 'type': 'egg', 'mob': 'enderman'},
+    304: {'name': 'Spider Egg', 'color': color.rgb(40, 20, 10), 'type': 'egg', 'mob': 'spider'},
+    305: {'name': 'Cow Egg', 'color': color.brown, 'type': 'egg', 'mob': 'cow'},
+    306: {'name': 'Sheep Egg', 'color': color.white, 'type': 'egg', 'mob': 'sheep'},
+    307: {'name': 'Pig Egg', 'color': color.pink, 'type': 'egg', 'mob': 'pig'},
+}
+
+# Separate items into pages for the UI
+item_keys = list(items.keys())
+pages = [item_keys[i:i+16] for i in range(0, len(item_keys), 16)]
+current_page = 0
+
+# --- Player Setup ---
+player = FirstPersonController(gravity=0.55, jump_height=2)
+player.cursor.visible = False
+player.health = 100
+
+# UI
+health_bar = HealthBar(bar_color=color.red, value=100, position=(-0.45, -0.45), scale=(0.3, 0.02))
+crosshair = Entity(parent=camera.ui, model='quad', color=color.white, scale=0.008, rotation_z=45)
+
+# --- INVENTORY SYSTEM (PAGINATED) ---
+inventory_bg = Entity(parent=camera.ui, model='quad', color=color.rgba(0,0,0,220), scale=(0.9, 0.7), visible=False)
+inv_buttons = []
+page_text = Text(parent=inventory_bg, text='Page 1', y=0.4, scale=1.5, origin=(0,0))
+hotbar = [1, 2, 3, 4, 100, 104, 300, 200, 202] # Defaults
+selected_slot = 0
+
+def toggle_inventory():
+    global current_page
+    inventory_bg.visible = not inventory_bg.visible
+    player.cursor.visible = inventory_bg.visible
+    player.enabled = not inventory_bg.visible
+    
+    if inventory_bg.visible:
+        load_page(current_page)
+    else:
+        clear_inv_buttons()
+
+def clear_inv_buttons():
+    for b in inv_buttons: destroy(b)
+    inv_buttons.clear()
+
+def load_page(page_idx):
+    clear_inv_buttons()
+    page_text.text = f'Page {page_idx + 1}/{len(pages)}'
+    
+    # Navigation Buttons
+    if page_idx > 0:
+        prev_b = Button(parent=inventory_bg, text='<', scale=(0.05, 0.05), position=(-0.4, 0.4), color=color.gray)
+        prev_b.on_click = Func(change_page, -1)
+        inv_buttons.append(prev_b)
+    if page_idx < len(pages) - 1:
+        next_b = Button(parent=inventory_bg, text='>', scale=(0.05, 0.05), position=(0.4, 0.4), color=color.gray)
+        next_b.on_click = Func(change_page, 1)
+        inv_buttons.append(next_b)
+
+    # Item Grid
+    current_items = pages[page_idx]
+    for i, item_id in enumerate(current_items):
+        row = i // 8
+        col = i % 8
+        info = items[item_id]
+        
+        btn = Button(parent=inventory_bg, model='quad', color=info['color'],
+                     scale=(0.08, 0.08), position=(-0.35 + col*0.1, 0.25 - row*0.12))
+        btn.on_click = Func(equip_item, item_id)
+        btn.tooltip = Tooltip(info['name'])
+        inv_buttons.append(btn)
+
+def change_page(direction):
+    global current_page
+    current_page += direction
+    load_page(current_page)
+
+def equip_item(id):
+    hotbar[selected_slot] = id
+    update_hand()
+
+# Hotbar UI
+hotbar_ui = []
+for i in range(9):
+    e = Entity(parent=camera.ui, model='quad', color=color.rgba(0,0,0,150), scale=(0.08, 0.08), position=(-0.4 + i*0.1, -0.4))
+    hotbar_ui.append(e)
+selector = Entity(parent=camera.ui, model='quad', color=color.white, scale=(0.09, 0.09), position=(-0.4, -0.4), z=-1)
+
+# Hand
+hand = Entity(parent=camera.ui, model='cube', scale=0.4, position=(0.6,-0.6), rotation=(-15,-30,-10))
+hand_text = Text(text='', position=(-0.85, 0.45), scale=1.5)
+
+def update_hand():
+    id = hotbar[selected_slot]
+    info = items.get(id, items[1])
+    hand.color = info['color']
+    hand_text.text = info['name']
+    selector.x = -0.4 + selected_slot * 0.1
+    
+    # Model Changes
+    if info['type'] == 'weapon':
+        hand.scale = (0.15, 0.8, 0.15)
+        hand.rotation = (0, 0, 15)
+    else:
+        hand.scale = 0.4
+        hand.rotation = (-15,-30,-10)
+
+update_hand()
+
+# --- BLOCKS & EFFECTS ---
+class Particle(Entity):
+    def __init__(self, position, color):
+        super().__init__(parent=scene, model='cube', scale=0.1, color=color, position=position)
+        self.direction = Vec3(random.uniform(-1,1), random.uniform(0,1), random.uniform(-1,1))
+        self.speed = random.uniform(1, 3)
+        self.animate_scale(0, duration=1, curve=curve.linear)
+        destroy(self, delay=1)
+    
+    def update(self):
+        self.position += self.direction * self.speed * time.dt
+        self.y -= 4 * time.dt # Gravity
+
+class Voxel(Button):
+    def __init__(self, position, block_id):
+        super().__init__(
+            parent=scene, position=position, model='cube', origin_y=0.5,
+            color=items[block_id]['color'], texture='white_cube',
+            highlight_color=color.lime
+        )
+        self.block_id = block_id
+
+    def input(self, key):
+        if self.hovered and player.enabled:
+            cid = hotbar[selected_slot]
+            info = items[cid]
+            
+            if key == 'left mouse down':
+                swing_hand()
+                # Spawn Particles
+                for i in range(4): Particle(self.position + Vec3(0,0.5,0), self.color)
+                destroy(self)
+                
+            elif key == 'right mouse down':
+                swing_hand()
+                p = self.position + self.normal
+                if info['type'] == 'block': Voxel(p, cid)
+                elif info['type'] == 'stair': Stair(p, info['color'], player.rotation_y)
+                elif info['type'] == 'door': Door(p, info['color'], player.rotation_y)
+                elif info['type'] == 'egg': SpawnMob(p, info['mob'])
+                elif info['type'] == 'food': 
+                    player.health = min(100, player.health + info.get('heal', 0))
+                    health_bar.value = player.health
+
+class Stair(Entity):
+    def __init__(self, pos, col, rot):
+        # Snap rotation to 90 degrees
+        rot = round(rot / 90) * 90
+        super().__init__(parent=scene, position=pos, rotation_y=rot)
+        Voxel(parent=self, position=(0,0,0), block_id=1).scale=(1,0.5,1) # Hack: Using ID 1 just for init, overriden color
+        self.children[0].color = col
+        Voxel(parent=self, position=(0,0.5,0.25), block_id=1).scale=(1,0.5,0.5)
+        self.children[1].color = col
+        self.collider = BoxCollider(self, center=(0,0.5,0), size=(1,1,1))
+
+class Door(Entity):
+    def __init__(self, pos, col, rot):
+        rot = round(rot / 90) * 90
+        super().__init__(parent=scene, position=pos, rotation_y=rot)
+        self.d = Entity(parent=self, model='cube', scale=(1,2,0.1), color=col, position=(0,1,0.45), origin_y=0.5)
+        self.collider = BoxCollider(self, center=(0,1,0.45), size=(1,2,0.1))
+        # Add a handle
+        Entity(parent=self.d, model='cube', scale=(0.1,0.1,0.2), color=color.black, position=(0.4,0,0))
+
+# --- MOBS ---
+class Mob(Entity):
+    def __init__(self, pos, type):
+        super().__init__(parent=scene, position=pos, scale=1)
+        self.type = type
+        self.hp = 20
+        self.speed = 2
+        
+        # Appearance Logic
+        c = color.white
+        s = (0.6, 1.8, 0.6) # Default Humanoid
+        
+        if type == 'zombie': c = color.green
+        elif type == 'creeper': c = color.lime
+        elif type == 'skeleton': c = color.light_gray
+        elif type == 'enderman': c = color.black; s = (0.5, 2.8, 0.5); self.speed = 3
+        elif type == 'spider': c = color.rgb(40,20,10); s = (1.5, 0.5, 1.5)
+        elif type in ['cow', 'pig', 'sheep']: 
+            s = (0.9, 0.9, 1.4)
+            c = {'cow':color.brown, 'pig':color.pink, 'sheep':color.white}[type]
+            self.speed = 1
+            
+        self.model = Entity(parent=self, model='cube', color=c, scale=s, y=s[1]/2)
+        
+        # Name tag
+        Text(parent=self, text=type.upper(), y=s[1]+0.2, scale=2, billboard=True, color=color.white)
+
+    def update(self):
+        dist = distance_xz(self.position, player.position)
+        if self.type in ['cow', 'pig', 'sheep']: # Passive
+            if random.random() < 0.01: self.rotation_y += random.randint(-45, 45)
+            self.position += self.forward * time.dt * 0.5
+        else: # Hostile
+            if dist < 20:
+                self.look_at_2d(player.position, 'y')
+                self.position += self.forward * time.dt * self.speed
+            if dist < 1.5:
+                player.health -= 0.2
+                health_bar.value = player.health
+                player.camera_pivot.animate_rotation((5,0,0), duration=0.1)
+                player.camera_pivot.animate_rotation((0,0,0), duration=0.1, delay=0.1)
+
+    def take_damage(self, dmg):
+        self.hp -= dmg
+        self.model.blink(color.red)
+        if self.hp <= 0: destroy(self)
+
+def SpawnMob(pos, type):
+    Mob(pos + Vec3(0,1,0), type)
+
+# --- WORLD GEN ---
+def generate_world():
+    for x in range(12):
+        for z in range(12):
+            # Bedrock
+            Voxel((x,-5,z), 6)
+            # Layers
+            for y in range(-4, 0):
+                if y < -2: blk = 5 # Deepslate
+                else: blk = 3 # Stone
+                if random.random() < 0.05: blk = random.choice([20,21,23,27]) # Ores
+                Voxel((x,y,z), blk)
+            # Surface
+            Voxel((x,0,z), 1)
+            # Trees
+            if random.random() < 0.05:
+                for i in range(1,5): Voxel((x,i,z), 9)
+                for lx in range(-1,2):
+                    for lz in range(-1,2):
+                        Voxel((x+lx, 4, z+lz), 11)
+
+generate_world()
+
+# --- GAME LOGIC ---
+def swing_hand():
+    hand.animate_rotation((-40, -30, -10), duration=0.1)
+    hand.animate_rotation((-15, -30, -10), duration=0.1, delay=0.1)
+    # Check Hit
+    cid = hotbar[selected_slot]
+    dmg = items[cid].get('dmg', 1)
+    hit = raycast(camera.world_position, camera.forward, distance=4)
+    if hit.hit and isinstance(hit.entity.parent, Mob):
+        hit.entity.parent.take_damage(dmg)
+
+def update():
+    global selected_slot
+    
+    # Inputs
+    if held_keys['e'] and not player.cursor.visible: toggle_inventory()
+    elif held_keys['escape'] and player.cursor.visible: toggle_inventory()
+    
+    for i in range(1, 10):
+        if held_keys[str(i)]:
+            selected_slot = i - 1
+            update_hand()
+
+    # Hand Bobbing
+    if player.enabled and (held_keys['w'] or held_keys['a'] or held_keys['s'] or held_keys['d']):
+        hand.position = Vec3(0.6 + math.cos(time.time()*10)*0.01, -0.6 + math.sin(time.time()*10)*0.01, 0.5)
+    else:
+        hand.position = Vec3(0.6, -0.6, 0.5)
+
+    # Respawn
+    if player.y < -20 or player.health <= 0:
+        player.position = (5, 10, 5)
+        player.health = 100
+        health_bar.value = 100
+
+app.run()
