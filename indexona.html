@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vent Escape 3D</title>
+    <style>
+        /* --- CORE ENGINE STYLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        
+        body {
+            background-color: #050505;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 3D Scene Setup */
+        #viewport {
+            width: 100%;
+            height: 100%;
+            perspective: 800px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #world {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transform: translateZ(0);
+        }
+
+        /* --- 3D OBJECTS --- */
+        .surface {
+            position: absolute;
+            backface-visibility: hidden;
+        }
+
+        .floor {
+            background: repeating-linear-gradient(90deg, #1a1a1a 0px, #1a1a1a 100px, #222 100px, #222 200px);
+            box-shadow: inset 0 0 100px #000;
+        }
+
+        .ceiling {
+            background: #0a0a0a;
+            box-shadow: inset 0 0 50px #000;
+        }
+
+        .wall {
+            background: linear-gradient(180deg, #2a2a2a 0%, #111 100%);
+            border: 1px solid #333;
+        }
+
+        .vent-grate {
+            background: repeating-linear-gradient(0deg, #000 0px, #000 10px, #333 10px, #333 12px);
+            border: 2px solid #444;
+        }
+
+        /* The Monster */
+        #monster {
+            position: absolute;
+            transform-style: preserve-3d;
+            width: 60px;
+            height: 200px;
+            /* Centered origin */
+            transform-origin: center center; 
+        }
+
+        .monster-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a);
+            border-radius: 30px;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .monster-head {
+            position: absolute;
+            top: -50px;
+            left: 5px;
+            width: 50px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #60a5fa, #1e40af);
+            border-radius: 50%;
+        }
+
+        .monster-eye {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: red;
+            border-radius: 50%;
+            box-shadow: 0 0 10px red;
+            animation: pulse 1s infinite;
+        }
+
+        .monster-eye.left { top: 20px; left: 10px; }
+        .monster-eye.right { top: 20px; right: 10px; }
+
+        .monster-mouth {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            width: 30px;
+            height: 15px;
+            background: #7f1d1d;
+            border-radius: 0 0 15px 15px;
+        }
+
+        /* GrabPack Hand */
+        #grabpack-hand {
+            position: absolute;
+            width: 20px;
+            height: 30px;
+            background: linear-gradient(to bottom, #ef4444, #b91c1c);
+            border-radius: 4px;
+            transform: translateZ(-200px) translateX(150px) translateY(100px);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+            display: none; /* Hidden in menu */
+        }
+
+        #grab-beam {
+            position: absolute;
+            width: 4px;
+            height: 0px;
+            background: linear-gradient(to bottom, rgba(248, 113, 113, 0.8), transparent);
+            transform-origin: top;
+            transform: translateZ(-200px) translateX(158px) translateY(115px) rotateX(90deg);
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        /* --- UI OVERLAYS --- */
+        #ui-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+            transition: opacity 0.3s;
+        }
+
+        .hidden { opacity: 0; pointer-events: none; }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            background: linear-gradient(to right, #ef4444, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            text-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+        }
+
+        button {
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: white;
+            color: black;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin-top: 2rem;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #eee;
+        }
+
+        .controls-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+            background: rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 1rem;
+        }
+
+        .key {
+            font-weight: bold;
+            color: #fbbf24;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+        }
+        
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+        }
+        
+        #crosshair::before { top: 9px; left: 0; width: 100%; height: 2px; }
+        #crosshair::after { left: 9px; top: 0; height: 100%; width: 2px; }
+
+        .status-badge {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .status-badge.active { opacity: 1; }
+        .status-badge.crouch { border-color: #3b82f6; color: #60a5fa; }
+        .status-badge.grab { border-color: #ef4444; color: #f87171; }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* Google Button Sim */
+        .google-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+        }
+        .google-btn:hover { background: #f1f1f1; }
+
+    </style>
+</head>
+<body>
+
+    <div id="viewport">
+        <div id="world">
+            <!-- World generated by JS -->
+            <div id="monster">
+                <div class="monster-head">
+                    <div class="monster-eye left"></div>
+                    <div class="monster-eye right"></div>
+                    <div class="monster-mouth"></div>
+                </div>
+                <div class="monster-body"></div>
+            </div>
+            
+            <div id="grabpack-hand"></div>
+            <div id="grab-beam"></div>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <!-- Main Menu -->
+        <div id="menu-screen" class="screen">
+            <h1>Vent Escape</h1>
+            <p style="color: #aaa; margin-bottom: 20px;">Survive the facility. Don't let it catch you.</p>
+            
+            <div class="google-btn" onclick="alert('Google Sign-In Simulated!')">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+            </div>
+
+            <button onclick="startGame()">ENTER FACILITY</button>
+
+            <div class="controls-info">
+                <div><span class="key">WASD</span> Move</div>
+                <div><span class="key">MOUSE</span> Look</div>
+                <div><span class="key">CTRL</span> Crouch</div>
+                <div><span class="key">E</span> GrabPack</div>
+            </div>
+        </div>
+
+        <!-- Pause Screen -->
+        <div id="pause-screen" class="screen hidden">
+            <h1>PAUSED</h1>
+            <button onclick="togglePause()">RESUME</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="screen hidden">
+            <h1 style="color: #ef4444; background: none; -webkit-text-fill-color: #ef4444;">CAPTURED</h1>
+            <p>The Watcher caught you.</p>
+            <button onclick="location.reload()">TRY AGAIN</button>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div id="crosshair"></div>
+            
+            <div id="crouch-indicator" class="status-badge crouch">
+                <div class="dot"></div> CROUCHING
+            </div>
+            
+            <div id="grab-indicator" class="status-badge grab">
+                <div class="dot"></div> GRABPACK ACTIVE
+            </div>
+
+            <div style="position: absolute; bottom: 30px; right: 30px; text-align: right; color: #666; font-size: 0.8rem;">
+                ESC to Pause
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        const state = {
+            isPlaying: false,
+            isPaused: false,
+            isGameOver: false,
+            
+            // Player Physics
+            pos: { x: 0, y: 0, z: 0 },
+            rot: { x: 0, y: 0 },
+            vel: { x: 0, z: 0 },
+            
+            // Mechanics
+            isCrouching: false,
+            isGrabbing: false,
+            
+            // Inputs
+            keys: { w: false, a: false, s: false, d: false },
+            
+            // Monster
+            monsterPos: { x: 0, z: -800 },
+            monsterSpeed: 3.5
+        };
+
+        // --- DOM ELEMENTS ---
+        const world = document.getElementById('world');
+        const monster = document.getElementById('monster');
+        const grabHand = document.getElementById('grabpack-hand');
+        const grabBeam = document.getElementById('grab-beam');
+        const screens = {
+            menu: document.getElementById('menu-screen'),
+            pause: document.getElementById('pause-screen'),
+            gameover: document.getElementById('gameover-screen'),
+            hud: document.getElementById('hud')
+        };
+        const indicators = {
+            crouch: document.getElementById('crouch-indicator'),
+            grab: document.getElementById('grab-indicator')
+        };
+
+        // --- WORLD GENERATION ---
+        function initWorld() {
+            const segmentLength = 400;
+            const segments = 30;
+            const width = 400;
+            const height = 200;
+
+            for (let i = 0; i < segments; i++) {
+                const z = (i * segmentLength) - (segments * segmentLength / 2);
+                
+                // Floor
+                createSurface(width, segmentLength, 'floor', `rotateX(90deg) translateZ(-100px) translateZ(${-z}px)`);
+                
+                // Ceiling
+                createSurface(width, segmentLength, 'ceiling', `rotateX(-90deg) translateZ(-100px) translateZ(${-z}px)`);
+                
+                // Left Wall
+                const leftWall = createSurface(segmentLength, height, 'wall', `translateZ(-200px) translateX(-200px) translateZ(${-z}px) rotateY(90deg)`);
+                // Add vent grate
+                const grate = document.createElement('div');
+                grate.className = 'surface vent-grate';
+                grate.style.width = '60px';
+                grate.style.height = '120px';
+                grate.style.top = '40px';
+                grate.style.left = '20px';
+                leftWall.appendChild(grate);
+
+                // Right Wall
+                createSurface(segmentLength, height, 'wall', `translateZ(200px) translateX(-200px) translateZ(${-z}px) rotateY(-90deg)`);
+
+                // Obstacles (Crates)
+                if (i > 2 && i % 4 === 0) {
+                    const crate = document.createElement('div');
+                    crate.className = 'surface';
+                    crate.style.width = '60px';
+                    crate.style.height = '60px';
+                    crate.style.background = 'linear-gradient(135deg, #b45309, #78350f)';
+                    crate.style.transform = `translateX(${Math.random() * 200 - 100}px) translateZ(${-z}px)`;
+                    world.appendChild(crate);
+                }
+            }
+        }
+
+        function createSurface(w, h, type, transform) {
+            const el = document.createElement('div');
+            el.className = `surface ${type}`;
+            el.style.width = w + 'px';
+            el.style.height = h + 'px';
+            el.style.transform = transform;
+            world.appendChild(el);
+            return el;
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            state.isPlaying = true;
+            screens.menu.classList.add('hidden');
+            screens.hud.style.display = 'block';
+            grabHand.style.display = 'block';
+            
+            document.body.requestPointerLock();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function togglePause() {
+            state.isPaused = !state.isPaused;
+            screens.pause.classList.toggle('hidden');
+            
+            if (!state.isPaused) {
+                document.body.requestPointerLock();
+                requestAnimationFrame(gameLoop);
+            } else {
+                document.exitPointerLock();
+            }
+        }
+
+        function gameOver() {
+            state.isGameOver = true;
+            state.isPlaying = false;
+            document.exitPointerLock();
+            screens.gameover.classList.remove('hidden');
+            screens.hud.style.display = 'none';
+        }
+
+        // --- INPUT HANDLING ---
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (state.keys.hasOwnProperty(key)) state.keys[key] = true;
+            
+            if (key === 'control') {
+                state.isCrouching = true;
+                indicators.crouch.classList.add('active');
+            }
+            
+            if (key === 'e') {
+                activateGrabPack();
+            }
+
+            if (key === 'escape' && state.isPlaying) {
+                togglePause();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (state.keys.hasOwnProperty(key)) state.keys[key] = false;
+            
+            if (key === 'control') {
+                state.isCrouching = false;
+                indicators.crouch.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement !== document.body || state.isPaused) return;
+            
+            state.rot.y -= e.movementX * 0.002;
+            state.rot.x -= e.movementY * 0.002;
+            
+            // Clamp vertical look
+            state.rot.x = Math.max(-1.5, Math.min(1.5, state.rot.x));
+        });
+
+        function activateGrabPack() {
+            state.isGrabbing = true;
+            indicators.grab.classList.add('active');
+            
+            // Animate Beam
+            grabBeam.style.opacity = '1';
+            grabBeam.style.height = '300px';
+            grabBeam.style.transition = 'height 0.2s ease-out';
+
+            setTimeout(() => {
+                state.isGrabbing = false;
+                indicators.grab.classList.remove('active');
+                grabBeam.style.opacity = '0';
+                grabBeam.style.height = '0px';
+                grabBeam.style.transition = 'height 0.1s ease-in';
+            }, 500);
+        }
+
+        // --- MAIN LOOP ---
+        function gameLoop() {
+            if (!state.isPlaying || state.isPaused) return;
+
+            // 1. Calculate Movement
+            const speed = state.isCrouching ? 3 : 8;
+            const moveX = (state.keys.d ? 1 : 0) - (state.keys.a ? 1 : 0);
+            const moveZ = (state.keys.w ? 1 : 0) - (state.keys.s ? 1 : 0);
+
+            // Rotate movement vector by camera Y rotation
+            const sin = Math.sin(state.rot.y);
+            const cos = Math.cos(state.rot.y);
+            
+            const dx = (moveX * cos - moveZ * sin) * speed;
+            const dz = (moveX * sin + moveZ * cos) * speed;
+
+            state.pos.x += dx;
+            state.pos.z += dz;
+
+            // Crouching height adjustment
+            const targetY = state.isCrouching ? -50 : 0;
+            state.pos.y += (targetY - state.pos.y) * 0.2; // Smooth transition
+
+            // 2. Update Camera (World transforms)
+            // We move the world opposite to the player to simulate camera movement
+            const camTransform = `
+                translateZ(${state.pos.z}px)
+                translateX(${-state.pos.x}px)
+                translateY(${-state.pos.y}px)
+                rotateY(${state.rot.y}rad)
+                rotateX(${state.rot.x}rad)
+            `;
+            world.style.transform = camTransform;
+
+            // 3. Monster AI
+            const dxM = state.pos.x - state.monsterPos.x;
+            const dzM = state.pos.z - state.monsterPos.z;
+            const dist = Math.sqrt(dxM*dxM + dzM*dzM);
+
+            // Speed up if close
+            let currentSpeed = state.monsterSpeed;
+            if (dist < 500) currentSpeed = 5;
+            if (dist < 200) currentSpeed = 8;
+
+            if (dist > 50) {
+                state.monsterPos.x += (dxM / dist) * currentSpeed;
+                state.monsterPos.z += (dzM / dist) * currentSpeed;
+            } else {
+                gameOver();
+            }
+
+            // Update Monster DOM
+            monster.style.transform = `translate3d(${state.monsterPos.x}px, 0px, ${state.monsterPos.z}px)`;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- INIT ---
+        initWorld();
+
+    </script>
+</body>
+</html>
