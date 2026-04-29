@@ -3,3 +3,24 @@
     <p>This content will go fullscreen.</p>
     <button id="fs-btn">Toggle Fullscreen</button>
 </div>
+const fsBtn = document.getElementById('fs-btn');
+const element = document.getElementById('content-to-fullscreen');
+
+fsBtn.addEventListener('click', () => {
+    // Check if currently in fullscreen
+    if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) { /* Safari */
+            element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) { /* IE11 */
+            element.msRequestFullscreen();
+        }
+    } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+});
