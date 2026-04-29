@@ -1,26 +1,131 @@
-<iframe width="1000" height="1000" src="https://borg.games" frameborder="0" allowfullscreen></iframe>
-<div id="content-to-fullscreen">
-    <p>This content will go fullscreen.</p>
-    <button id="fs-btn">Toggle Fullscreen</button>
-</div>
-const fsBtn = document.getElementById('fs-btn');
-const element = document.getElementById('content-to-fullscreen');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borg Games Player</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Nice Ocean Blue Background */
+        body {
+            background: linear-gradient(135deg, #005c97, #363795);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif; /* Applied the cool font */
+            color: white;
+        }
 
-fsBtn.addEventListener('click', () => {
-    // Check if currently in fullscreen
-    if (!document.fullscreenElement) {
-        // Enter fullscreen
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) { /* Safari */
-            element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) { /* IE11 */
-            element.msRequestFullscreen();
+        /* Better Texture for the container (Glassmorphism effect) */
+        #content-to-fullscreen {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px); /* Gives it that cool frosty texture */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-    } else {
-        // Exit fullscreen
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
+
+        /* Making sure the iframe looks neat inside the box */
+        iframe {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            max-width: 100%; /* Keeps it from breaking small screens */
+            background: #000;
         }
-    }
-});
+
+        p {
+            margin: 0;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        /* Cool Fullscreen Button Styling */
+        #fs-btn {
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            border: none;
+            padding: 12px 30px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Button Hover Effects */
+        #fs-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5);
+        }
+
+        #fs-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* What happens when it actually goes fullscreen */
+        #content-to-fullscreen:fullscreen {
+            background: linear-gradient(135deg, #005c97, #363795);
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+            justify-content: center;
+        }
+        
+        #content-to-fullscreen:fullscreen iframe {
+            height: 80vh; /* Adjusts the game size to fit the screen nicely when expanded */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="content-to-fullscreen">
+        <p>This content will go fullscreen.</p>
+        
+        <iframe width="1000" height="1000" src="https://borg.games" frameborder="0" allowfullscreen></iframe>
+        
+        <button id="fs-btn">Toggle Fullscreen</button>
+    </div>
+
+    <script>
+        // Working JavaScript to make the toggle button actually trigger Fullscreen API
+        const fullscreenContainer = document.getElementById('content-to-fullscreen');
+        const fsBtn = document.getElementById('fs-btn');
+
+        fsBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                // If not in fullscreen, request to enter it
+                if (fullscreenContainer.requestFullscreen) {
+                    fullscreenContainer.requestFullscreen();
+                } else if (fullscreenContainer.webkitRequestFullscreen) { /* Safari support */
+                    fullscreenContainer.webkitRequestFullscreen();
+                } else if (fullscreenContainer.msRequestFullscreen) { /* IE11 support */
+                    fullscreenContainer.msRequestFullscreen();
+                }
+            } else {
+                // If already in fullscreen, exit it
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari support */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 support */
+                    document.msExitFullscreen();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
