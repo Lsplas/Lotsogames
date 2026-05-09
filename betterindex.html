@@ -2,104 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eaglercraft 0.3.0 | Full Lock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eaglercraft Full Lock</title>
     <style>
-        /* Force the page to be empty and black */
-        html, body {
+        /* Remove all browser spacing */
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* Prevents scrolling */
             background-color: #000;
         }
 
-        /* The Game Frame */
-        #eagler-frame {
+        /* Make the game fill every pixel of the screen */
+        #game-engine {
             width: 100vw;
             height: 100vh;
             border: none;
             display: block;
         }
 
-        /* Initial Overlay to trigger Fullscreen/Pointer Lock */
-        #click-to-play {
+        /* Simple overlay that vanishes on first click */
+        #overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000;
-            color: #555;
+            background: rgba(0,0,0,0.8);
+            color: white;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            font-family: sans-serif;
+            z-index: 999;
             cursor: pointer;
-            font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            text-align: center;
         }
-
-        #click-to-play:hover {
-            color: #fff;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="click-to-play">
-        <div class="spinner"></div>
-        <h1>Click to Initialize 0.3.0</h1>
+    <div id="overlay">
+        <h1>CLICK TO START & LOCK GAME</h1>
     </div>
 
     <iframe 
-        id="eagler-frame" 
-        src="https://eaglercraftz.pages.dev/javascript/builds/0.3.0/" 
-        allow="autoplay; fullscreen; keyboard; gamepad; pointer-lock">
+        id="game-engine" 
+        src="https://eaglercraftz.pages.dev/javascript/builds/0.2.0/" 
+        allow="autoplay; padding-left; fullscreen; keyboard; gamepad; focus-without-user-activation">
     </iframe>
 
     <script>
-        const frame = document.getElementById('eagler-frame');
-        const overlay = document.getElementById('click-to-play');
+        const frame = document.getElementById('game-engine');
+        const overlay = document.getElementById('overlay');
 
         overlay.addEventListener('click', () => {
-            // 1. Enter Fullscreen
+            // 1. Hide the overlay
+            overlay.style.display = 'none';
+            
+            // 2. Request Fullscreen for the frame
             if (frame.requestFullscreen) {
                 frame.requestFullscreen();
             } else if (frame.webkitRequestFullscreen) {
                 frame.webkitRequestFullscreen();
             }
 
-            // 2. Lock Pointer (Crucial for Minecraft controls)
-            if (frame.requestPointerLock) {
-                frame.requestPointerLock();
-            }
-
-            // 3. Focus and Hide Overlay
+            // 3. Force Focus
             frame.focus();
-            overlay.style.display = 'none';
         });
 
-        // Safety: If you exit fullscreen and click back, re-focus the game
-        window.addEventListener('click', () => {
-            if (overlay.style.display === 'none') {
-                frame.focus();
-            }
+        // Keep the game focused if the user clicks away
+        window.addEventListener('focus', () => {
+            frame.focus();
         });
     </script>
 </body>
